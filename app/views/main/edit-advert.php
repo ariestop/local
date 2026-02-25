@@ -1,0 +1,77 @@
+<div class="mb-4">
+    <a href="/" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> К списку</a>
+</div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h4 mb-0">Мои объявления</h1>
+    <a href="/add" class="btn btn-primary">Добавить объявление</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Действие</th>
+                    <th>Объект</th>
+                    <th>Город / Район</th>
+                    <th>Комнат</th>
+                    <th>М²</th>
+                    <th>Цена (руб.)</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($posts)): ?>
+                <tr>
+                    <td colspan="8" class="text-muted text-center py-4">У вас пока нет объявлений. <a href="/add">Добавить объявление</a></td>
+                </tr>
+                <?php else: ?>
+                <?php foreach ($posts as $p): ?>
+                <tr>
+                    <td class="text-nowrap text-muted small"><?= date('d/m', strtotime($p['created_at'])) ?></td>
+                    <td><?= htmlspecialchars($p['action_name']) ?></td>
+                    <td><?= htmlspecialchars($p['object_name']) ?></td>
+                    <td>
+                        <a href="/detail/<?= (int)$p['id'] ?>" class="text-dark text-decoration-none"><?= htmlspecialchars($p['city_name'] . ', ' . $p['area_name'] . ' р-н., ' . $p['street']) ?></a>
+                    </td>
+                    <td><?= (int)$p['room'] ?></td>
+                    <td><?= (int)$p['m2'] ?></td>
+                    <td class="cost"><?= number_format((int)$p['cost'], 0, '', ' ') ?></td>
+                    <td class="d-flex gap-1 flex-wrap">
+                        <a href="/edit/<?= (int)$p['id'] ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Редактировать</a>
+                        <button type="button" class="btn btn-outline-danger btn-sm btn-delete-post" data-id="<?= (int)$p['id'] ?>"><i class="bi bi-trash"></i> Удалить</button>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.btn-delete-post').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+        if (!confirm('Удалить это объявление? Фотографии и папка будут удалены.')) return;
+        const id = this.dataset.id;
+        try {
+            const r = await fetch('/delete/' + id, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const text = await r.text();
+            let data = {};
+            try { data = JSON.parse(text); } catch (e) {}
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Ошибка удаления');
+            }
+        } catch (err) {
+            alert('Ошибка сети');
+        }
+    });
+});
+</script>

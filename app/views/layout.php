@@ -37,7 +37,7 @@
                 </ul>
                 <div class="d-flex gap-2">
                     <?php if ($user): ?>
-                    <span class="navbar-text me-2"><?= htmlspecialchars($user['name']) ?></span>
+                    <a class="navbar-text me-2 text-decoration-none text-dark" href="/edit-advert"><?= htmlspecialchars($user['name']) ?></a>
                     <a class="btn btn-outline-secondary btn-sm" href="/logout">Выход</a>
                     <?php else: ?>
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">Вход</button>
