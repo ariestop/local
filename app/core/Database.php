@@ -1,0 +1,43 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Core;
+
+use PDO;
+use PDOException;
+
+final class Database
+{
+    private static ?PDO $connection = null;
+
+    public static function getConnection(array $config): PDO
+    {
+        if (self::$connection === null) {
+            try {
+                $dsn = sprintf(
+                    'mysql:host=%s;dbname=%s;charset=%s',
+                    $config['host'],
+                    $config['dbname'],
+                    $config['charset']
+                );
+                self::$connection = new PDO($dsn, $config['user'], $config['password'], [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]);
+            } catch (\PDOException $e) {
+                if (php_sapi_name() !== 'cli') {
+                    http_response_code(500);
+                    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ошибка</title></head><body>';
+                    echo '<h1>Ошибка подключения к БД</h1>';
+                    echo '<p>Импортируйте базу: откройте <a href="/install.php">/install.php</a> или загрузите infosee2_m2sar.sql через phpMyAdmin.</p>';
+                    echo '<p>Проверьте настройки в app/config/config.php</p>';
+                    echo '</body></html>';
+                    exit;
+                }
+                throw $e;
+            }
+        }
+        return self::$connection;
+    }
+}

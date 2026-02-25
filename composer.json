@@ -1,0 +1,13 @@
+{
+    "name": "m2saratov/board",
+    "description": "Доска объявлений недвижимости",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "require": {
+        "php": ">=8.2"
+    }
+}
