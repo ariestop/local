@@ -12,6 +12,12 @@ class Post
         private PDO $db
     ) {}
 
+    public function count(): int
+    {
+        $stmt = $this->db->query("SELECT COUNT(*) FROM post");
+        return (int) $stmt->fetchColumn();
+    }
+
     public function getList(int $limit = 50, int $offset = 0): array
     {
         $sql = "SELECT p.id, p.user_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house,

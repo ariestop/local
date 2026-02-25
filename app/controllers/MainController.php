@@ -9,17 +9,26 @@ use App\Models\Post;
 use App\Models\PostPhoto;
 use App\Models\Reference;
 use App\Services\ImageService;
+use App\Validation;
 
 class MainController extends Controller
 {
     public function index(): void
     {
+        $perPage = 20;
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $offset = ($page - 1) * $perPage;
         $postModel = new Post($this->db);
-        $posts = $postModel->getList(50, 0);
+        $total = $postModel->count();
+        $posts = $postModel->getList($perPage, $offset);
+        $totalPages = $total > 0 ? (int) ceil($total / $perPage) : 1;
         $user = $this->getLoggedUser();
         $this->render('main/index', [
             'posts' => $posts,
             'user' => $user,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
         ]);
     }
 
@@ -65,13 +74,16 @@ class MainController extends Controller
     public function addSubmit(): void
     {
         $this->requireAuth();
+        if (!$this->validateCsrf()) {
+            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            return;
+        }
         $user = $this->getLoggedUser();
-        $required = ['action_id', 'object_id', 'city_id', 'area_id', 'street', 'phone', 'cost', 'descr_post'];
-        foreach ($required as $field) {
-            if (empty($_POST[$field])) {
-                $this->json(['success' => false, 'error' => 'Заполните все обязательные поля'], 400);
-                return;
-            }
+        $v = new Validation();
+        $v->required($_POST, ['action_id', 'object_id', 'city_id', 'area_id', 'street', 'phone', 'cost', 'descr_post']);
+        if (!$v->isValid()) {
+            $this->json(['success' => false, 'error' => $v->firstError() ?? 'Заполните все обязательные поля'], 400);
+            return;
         }
         $postModel = new Post($this->db);
         $id = $postModel->create([
@@ -157,6 +169,10 @@ class MainController extends Controller
     public function editSubmit(string $id): void
     {
         $this->requireAuth();
+        if (!$this->validateCsrf()) {
+            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            return;
+        }
         $user = $this->getLoggedUser();
         $postId = (int) $id;
         $postModel = new Post($this->db);
@@ -166,12 +182,11 @@ class MainController extends Controller
             $this->json(['success' => false, 'error' => 'Объявление не найдено'], 404);
             return;
         }
-        $required = ['action_id', 'object_id', 'city_id', 'area_id', 'street', 'phone', 'cost', 'descr_post'];
-        foreach ($required as $field) {
-            if (empty($_POST[$field])) {
-                $this->json(['success' => false, 'error' => 'Заполните все обязательные поля'], 400);
-                return;
-            }
+        $v = new Validation();
+        $v->required($_POST, ['action_id', 'object_id', 'city_id', 'area_id', 'street', 'phone', 'cost', 'descr_post']);
+        if (!$v->isValid()) {
+            $this->json(['success' => false, 'error' => $v->firstError() ?? 'Заполните все обязательные поля'], 400);
+            return;
         }
         $postModel->update($postId, (int) $user['id'], [
             'action_id' => (int) $_POST['action_id'],
@@ -223,6 +238,11 @@ class MainController extends Controller
     public function delete(string $id): void
     {
         $this->requireAuth();
+        $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+        if ($token === '' || !hash_equals(csrf_token(), $token)) {
+            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            return;
+        }
         $user = $this->getLoggedUser();
         $postId = (int) $id;
         $postModel = new Post($this->db);

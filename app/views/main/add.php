@@ -5,7 +5,7 @@
     <div class="card-body">
         <h2 class="h5 mb-4">Добавить объявление</h2>
         <div id="addError" class="alert alert-danger d-none"></div>
-        <form id="addForm" enctype="multipart/form-data">
+        <form id="addForm" enctype="multipart/form-data"><?= csrf_field() ?>
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">Действие *</label>

@@ -11,6 +11,10 @@ class UserController extends Controller
 {
     public function login(): void
     {
+        if (!$this->validateCsrf()) {
+            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            return;
+        }
         if ($this->getLoggedUser()) {
             $this->json(['success' => true, 'user' => $this->getLoggedUser()]);
             return;
@@ -36,6 +40,10 @@ class UserController extends Controller
 
     public function register(): void
     {
+        if (!$this->validateCsrf()) {
+            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            return;
+        }
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
         $password2 = $_POST['password2'] ?? '';

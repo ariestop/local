@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
     <title><?= htmlspecialchars($config['app']['name'] ?? 'Доска объявлений') ?> - продажа недвижимости</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -19,6 +20,10 @@
         .table thead th { font-weight: 600; color: #333; background: #fff; }
         .cost { font-weight: 600; white-space: nowrap; }
         a.text-dark:hover { color: var(--accent) !important; }
+        .btn-loading { pointer-events: none; opacity: 0.8; }
+        .btn-loading .btn-spinner { display: inline-block; width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: -0.15em; margin-right: 0.35em; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #toastContainer { position: fixed; bottom: 1rem; right: 1rem; z-index: 1100; }
     </style>
 </head>
 <body>
@@ -60,6 +65,7 @@
         </div>
     </main>
 
+    <div id="toastContainer" class="toast-container"></div>
     <footer class="py-4 mt-auto text-muted small border-top">
         <div class="container text-center">Доска объявлений о продаже недвижимости. Саратов и Энгельс.</div>
     </footer>
@@ -74,7 +80,7 @@
                 </div>
                 <div class="modal-body">
                     <div id="loginError" class="alert alert-danger d-none"></div>
-                    <form id="loginForm">
+                    <form id="loginForm"><?= csrf_field() ?>
                         <div class="mb-3">
                             <label class="form-label">E-mail *</label>
                             <input type="email" name="email" class="form-control" required>
@@ -100,7 +106,7 @@
                 </div>
                 <div class="modal-body">
                     <div id="registerError" class="alert alert-danger d-none"></div>
-                    <form id="registerForm">
+                    <form id="registerForm"><?= csrf_field() ?>
                         <div class="mb-3">
                             <label class="form-label">E-mail *</label>
                             <input type="email" name="email" id="regEmail" class="form-control" required>

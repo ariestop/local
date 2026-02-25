@@ -6,7 +6,20 @@ namespace App\Core;
 
 class Router
 {
-    private array $routes = [];
+    private array $routes = ['GET' => [], 'POST' => []];
+
+    public static function fromConfig(string $configPath): self
+    {
+        $routes = require $configPath;
+        $router = new self();
+        foreach ($routes['GET'] ?? [] as $path => $handler) {
+            $router->routes['GET'][$path] = $handler;
+        }
+        foreach ($routes['POST'] ?? [] as $path => $handler) {
+            $router->routes['POST'][$path] = $handler;
+        }
+        return $router;
+    }
 
     public function get(string $path, array $handler): self
     {
@@ -42,6 +55,12 @@ class Router
         }
 
         http_response_code(404);
-        echo '404 Not Found';
+        header('Content-Type: text/html; charset=utf-8');
+        $viewFile = dirname(__DIR__, 2) . '/app/views/404.php';
+        if (file_exists($viewFile)) {
+            require $viewFile;
+        } else {
+            echo '404 Not Found';
+        }
     }
 }

@@ -10,7 +10,7 @@ $photos = $photos ?? [];
     <div class="card-body">
         <h2 class="h5 mb-4">Редактировать объявление</h2>
         <div id="editError" class="alert alert-danger d-none"></div>
-        <form id="editForm" enctype="multipart/form-data">
+        <form id="editForm" enctype="multipart/form-data"><?= csrf_field() ?>
             <input type="hidden" name="delete_photos" id="deletePhotos" value="">
             <div class="row g-3">
                 <div class="col-md-6">
@@ -130,6 +130,8 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         const errEl = document.getElementById('editError');
         errEl.classList.add('d-none');
+        const btn = e.target.querySelector('button[type="submit"]');
+        if (window.setButtonLoading) window.setButtonLoading(btn, true);
         const toDelete = [];
         document.querySelectorAll('.photo-delete:checked').forEach(cb => toDelete.push(cb.value));
         document.getElementById('deletePhotos').value = toDelete.join(',');
@@ -149,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (m) data = JSON.parse(m[0]);
             } catch (x) {}
             if (data.success) {
+                if (window.showToast) window.showToast('Изменения сохранены');
                 window.location.href = '/detail/' + data.id;
             } else {
                 errEl.textContent = data.error || 'Ошибка';
@@ -157,6 +160,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (err) {
             errEl.textContent = 'Ошибка сети: ' + (err.message || '');
             errEl.classList.remove('d-none');
+        } finally {
+            if (window.setButtonLoading) window.setButtonLoading(btn, false);
         }
     });
 });

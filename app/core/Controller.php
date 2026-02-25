@@ -55,4 +55,10 @@ abstract class Controller
         return isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
             strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
+
+    protected function validateCsrf(): bool
+    {
+        $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        return $token !== '' && hash_equals(csrf_token(), $token);
+    }
 }

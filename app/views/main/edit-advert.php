@@ -56,10 +56,11 @@ document.querySelectorAll('.btn-delete-post').forEach(function(btn) {
         if (!confirm('Удалить это объявление? Фотографии и папка будут удалены.')) return;
         const id = this.dataset.id;
         try {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
             const r = await fetch('/delete/' + id, {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrf }
             });
             const text = await r.text();
             let data = {};
