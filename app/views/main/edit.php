@@ -10,7 +10,7 @@ $photos = $photos ?? [];
     <div class="card-body">
         <h2 class="h5 mb-4">Редактировать объявление</h2>
         <div id="editError" class="alert alert-danger d-none"></div>
-        <form id="editForm" enctype="multipart/form-data"><?= csrf_field() ?>
+        <form id="editForm" enctype="multipart/form-data" data-max-price="<?= (int)($max_price ?? 999000000) ?>"><?= csrf_field() ?>
             <input type="hidden" name="delete_photos" id="deletePhotos" value="">
             <div class="row g-3">
                 <div class="col-md-6">
@@ -91,7 +91,8 @@ $photos = $photos ?? [];
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Цена (руб.) *</label>
-                    <input type="text" name="cost" class="form-control" value="<?= number_format((int)($post['cost'] ?? 0), 0, '', ' ') ?>" placeholder="1250000" required>
+                    <input type="text" name="cost" id="editCostInput" class="form-control" value="<?= number_format((int)($post['cost'] ?? 0), 0, '', ' ') ?>" placeholder="1250000" required>
+                    <div class="form-text">Макс. <?= number_format((int)($max_price ?? 999000000), 0, '', ' ') ?> руб.</div>
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Сохранить</button>
@@ -128,15 +129,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('editForm').addEventListener('submit', async function(e) {
         e.preventDefault();
+        const form = e.target;
         const errEl = document.getElementById('editError');
         errEl.classList.add('d-none');
-        const btn = e.target.querySelector('button[type="submit"]');
+        const maxPrice = parseInt(form.dataset.maxPrice || '999000000', 10);
+        const costEl = form.querySelector('input[name="cost"]');
+        if (costEl && maxPrice > 0) {
+            const cost = parseInt(String(costEl.value).replace(/\D/g, '') || '0', 10);
+            if (cost > maxPrice) {
+                errEl.textContent = 'Цена не должна превышать ' + maxPrice.toLocaleString('ru-RU') + ' руб.';
+                errEl.classList.remove('d-none');
+                return;
+            }
+        }
+        const btn = form.querySelector('button[type="submit"]');
         if (window.setButtonLoading) window.setButtonLoading(btn, true);
         const toDelete = [];
         document.querySelectorAll('.photo-delete:checked').forEach(cb => toDelete.push(cb.value));
         document.getElementById('deletePhotos').value = toDelete.join(',');
 
-        const fd = new FormData(e.target);
+        const fd = new FormData(form);
         try {
             const r = await fetch('/edit/<?= $pid ?>', {
                 method: 'POST',

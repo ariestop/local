@@ -124,9 +124,19 @@
     document.getElementById('addForm')?.addEventListener('submit', async function(e) {
         e.preventDefault();
         hideError('addError');
-        const btn = e.target.querySelector('button[type="submit"]');
+        const form = e.target;
+        const maxPrice = parseInt(form.dataset.maxPrice || '999000000', 10);
+        const costEl = form.querySelector('input[name="cost"]');
+        if (costEl && maxPrice > 0) {
+            const cost = parseInt(String(costEl.value).replace(/\D/g, '') || '0', 10);
+            if (cost > maxPrice) {
+                showError('addError', 'Цена не должна превышать ' + maxPrice.toLocaleString('ru-RU') + ' руб.');
+                return;
+            }
+        }
+        const btn = form.querySelector('button[type="submit"]');
         setButtonLoading(btn, true);
-        const fd = new FormData(e.target);
+        const fd = new FormData(form);
         try {
             const r = await fetch('/add', {
                 method: 'POST',

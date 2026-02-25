@@ -1,6 +1,15 @@
 # История изменений
 
-## Улучшения (последнее обновление)
+## Архитектура и качество кода
+
+- **Composer** — composer.json с vlucas/phpdotenv, monolog; PSR-4 autoload
+- **Repositories** — PostRepository, UserRepository, PostPhotoRepository, ReferenceRepository
+- **Services** — PostService (CRUD объявлений), AuthService (логин, регистрация)
+- **DI Container** — App\Core\Container для разрешения зависимостей
+- **Logging** — App\Log\LoggerInterface, NullLogger, MonologAdapter
+- **bootstrap.php** — инициализация, загрузка .env (Composer или встроенная)
+
+## Улучшения (ранее)
 
 ### Безопасность
 - **CSRF-защита** — токены для форм (login, register, add, edit, delete)

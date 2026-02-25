@@ -5,6 +5,7 @@ composer.lock
 *.log
 .DS_Store
 public/images/
+storage/logs/
 Thumbs.db
 .idea/
 .vscode/

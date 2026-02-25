@@ -67,4 +67,11 @@ class PostPhoto
         $stmt = $this->db->prepare("DELETE FROM post_photo WHERE post_id = ?");
         $stmt->execute([$postId]);
     }
+
+    public function getMaxSortOrder(int $postId): int
+    {
+        $stmt = $this->db->prepare("SELECT COALESCE(MAX(sort_order), -1) FROM post_photo WHERE post_id = ?");
+        $stmt->execute([$postId]);
+        return (int) $stmt->fetchColumn();
+    }
 }

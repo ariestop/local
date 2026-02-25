@@ -11,10 +11,15 @@ abstract class Controller
     protected PDO $db;
     protected array $config;
 
-    public function __construct()
+    public function __construct(?Container $container = null)
     {
-        $this->config = require dirname(__DIR__) . '/config/config.php';
-        $this->db = Database::getConnection($this->config['db']);
+        if ($container !== null) {
+            $this->config = $container->getConfig();
+            $this->db = $container->get(PDO::class);
+        } else {
+            $this->config = require dirname(__DIR__) . '/config/config.php';
+            $this->db = Database::getConnection($this->config['db']);
+        }
     }
 
     protected function json(mixed $data, int $status = 200): void

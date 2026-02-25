@@ -4,7 +4,13 @@ MVC-сайт на PHP 8.5+, Bootstrap 5, MySQL 8.0. Аналог m2saratov.ru. �
 
 ## Установка
 
-1. **Развернуть базу данных**
+1. **Composer** (опционально, для .env и логирования)
+   ```bash
+   composer install
+   ```
+   Без Composer проект работает с встроенной загрузкой .env и NullLogger.
+
+2. **Развернуть базу данных**
    - Импортируйте `public/infosee2_m2sar.sql` в MySQL 8.0
    - Выполните `php scripts/migrate.php` (создаёт post_photo, расширяет user.password)
 
@@ -35,15 +41,18 @@ MVC-сайт на PHP 8.5+, Bootstrap 5, MySQL 8.0. Аналог m2saratov.ru. �
 
 ```
 app/
-  config/       — конфигурация
-  core/         — Router, Database, Controller
-  models/       — Post, User, Reference, PostPhoto
-  controllers/  — MainController, UserController, ApiController
-  views/        — layout + main/*.php
-  services/     — ImageService (фото)
-  helpers.php   — photo_thumb_url, photo_large_url
-public/         — точка входа, assets, images
-docs/           — документация
+  config/         — конфигурация, routes.php
+  core/           — Router, Database, Controller, Container
+  models/         — Post, User, Reference, PostPhoto
+  Repositories/   — PostRepository, UserRepository, PostPhotoRepository, ReferenceRepository
+  Services/       — PostService, AuthService, ImageService
+  Log/            — LoggerInterface, NullLogger, MonologAdapter
+  controllers/    — MainController, UserController, ApiController
+  views/          — layout + main/*.php
+  bootstrap.php   — загрузка, контейнер
+public/           — точка входа, assets, images
+storage/logs/     — логи (при Monolog)
+docs/             — документация
 ```
 
 ## Документация

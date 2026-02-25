@@ -16,9 +16,12 @@ return [
         'name' => 'Квадратный метр',
         'url' => '',
         'timezone' => 'Europe/Moscow',
+        'max_price' => (int) ($env('MAX_PRICE', '999000000')),
     ],
     'session' => [
-        'name' => 'm2saratov_sess',
+        'name' => $env('SESSION_NAME', 'm2saratov_sess'),
         'lifetime' => 86400,
     ],
+    'images_path' => dirname(__DIR__, 2) . '/public/images',
+    'log_path' => dirname(__DIR__, 2) . '/storage/logs',
 ];

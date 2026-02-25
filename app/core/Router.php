@@ -7,6 +7,13 @@ namespace App\Core;
 class Router
 {
     private array $routes = ['GET' => [], 'POST' => []];
+    private ?Container $container = null;
+
+    public function setContainer(Container $container): self
+    {
+        $this->container = $container;
+        return $this;
+    }
 
     public static function fromConfig(string $configPath): self
     {
@@ -48,7 +55,7 @@ class Router
             if (preg_match($pattern, $path, $matches)) {
                 array_shift($matches);
                 [$controller, $action] = $handler;
-                $instance = new $controller();
+                $instance = $this->container?->get($controller) ?? new $controller();
                 $instance->{$action}(...$matches);
                 return;
             }

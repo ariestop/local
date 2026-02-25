@@ -5,16 +5,23 @@
 ```
 [Браузер]
     ↓
-[public/index.php] — точка входа
+[public/index.php] → [bootstrap.php] — точка входа, контейнер
     ↓
-[Router] — сопоставление маршрута
+[Router] + [Container] — сопоставление маршрута, разрешение зависимостей
     ↓
-[Controller] → [Model] → [PDO/MySQL]
+[Controller] → [Service] → [Repository] → [Model] → [PDO/MySQL]
     ↓              ↓
 [View] ← данные
     ↓
 [layout.php] — обёртка
 ```
+
+## Слои
+
+- **Controller** — HTTP-слой, валидация CSRF, вызов сервисов
+- **Service** — бизнес-логика (PostService, AuthService)
+- **Repository** — доступ к данным, фасад над Model
+- **Model** — работа с БД (Post, User, PostPhoto, Reference)
 
 ## Компоненты
 

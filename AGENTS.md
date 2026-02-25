@@ -22,13 +22,16 @@
 
 ```
 app/
-  config/config.php      — настройки БД и приложения
-  core/                  — Router, Database, Controller
-  models/                — Post, User, Reference, PostPhoto
-  controllers/           — MainController, UserController, ApiController
-  views/                 — layout.php + main/*.php
-  services/ImageService  — загрузка и обработка фото
-  helpers.php            — photo_thumb_url(), photo_large_url()
+  config/         — config.php, routes.php
+  core/           — Router, Database, Controller, Container
+  models/         — Post, User, Reference, PostPhoto
+  Repositories/   — PostRepository, UserRepository, PostPhotoRepository, ReferenceRepository
+  Services/       — PostService, AuthService, ImageService
+  Log/            — LoggerInterface, NullLogger (MonologAdapter при composer)
+  controllers/    — MainController, UserController, ApiController
+  bootstrap.php   — инициализация, контейнер
+  views/          — layout.php + main/*.php
+  helpers.php     — photo_thumb_url(), photo_large_url()
 public/
   index.php              — точка входа, роутинг
   assets/app.js          — логика форм (логин, регистрация, add/edit)

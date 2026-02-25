@@ -4,11 +4,20 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Container;
 use App\Core\Controller;
-use App\Models\User;
+use App\Repositories\UserRepository;
 
 class ApiController extends Controller
 {
+    public function __construct(Container $container)
+    {
+        parent::__construct($container);
+        $this->userRepo = $container->get(UserRepository::class);
+    }
+
+    private UserRepository $userRepo;
+
     public function checkEmail(): void
     {
         $email = trim($_GET['email'] ?? '');
@@ -16,8 +25,7 @@ class ApiController extends Controller
             $this->json(['exists' => false]);
             return;
         }
-        $userModel = new User($this->db);
-        $this->json(['exists' => $userModel->emailExists($email)]);
+        $this->json(['exists' => $this->userRepo->emailExists($email)]);
     }
 
     public function captcha(): void
