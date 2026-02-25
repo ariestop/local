@@ -5,7 +5,7 @@
     <div class="card-body">
         <h2 class="h5 mb-4">Добавить объявление</h2>
         <div id="addError" class="alert alert-danger d-none"></div>
-        <form id="addForm">
+        <form id="addForm" enctype="multipart/form-data">
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">Действие *</label>
@@ -62,6 +62,10 @@
                 <div class="col-12">
                     <label class="form-label">Описание *</label>
                     <textarea name="descr_post" class="form-control" rows="4" required></textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Фотографии (до 5 шт.)</label>
+                    <input type="file" name="photos[]" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Телефон *</label>

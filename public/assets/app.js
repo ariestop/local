@@ -44,9 +44,12 @@
             const r = await fetch('/login', {
                 method: 'POST',
                 body: fd,
+                credentials: 'same-origin',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            const data = await r.json();
+            const text = await r.text();
+            let data;
+            try { data = JSON.parse(text); } catch { data = {}; }
             if (data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('loginModal'))?.hide();
                 location.reload();
@@ -92,16 +95,23 @@
             const r = await fetch('/add', {
                 method: 'POST',
                 body: fd,
+                credentials: 'same-origin',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            const data = await r.json();
+            const text = await r.text();
+            let data = {};
+            try {
+                var m = text.match(/\{[\s\S]*\}/);
+                if (m) data = JSON.parse(m[0]);
+            } catch (e) {}
             if (data.success) {
                 window.location.href = '/detail/' + data.id;
             } else {
-                showError('addError', data.error || 'Ошибка');
+                var msg = data.error || data.message || (r.ok ? '' : 'Код ' + r.status);
+                showError('addError', msg || text.trim().substring(0, 200) || 'Ошибка сервера');
             }
         } catch (err) {
-            showError('addError', 'Ошибка сети');
+            showError('addError', 'Ошибка сети: ' + (err.message || ''));
         }
     });
 

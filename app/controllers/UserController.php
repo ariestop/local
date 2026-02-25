@@ -74,8 +74,9 @@ class UserController extends Controller
             $this->json(['success' => false, 'error' => 'Этот email уже зарегистрирован'], 400);
             return;
         }
-        $userModel->register(['email' => $email, 'password' => $password, 'name' => $name]);
-        $this->json(['success' => true, 'message' => 'Регистрация успешна']);
+        $userId = $userModel->register(['email' => $email, 'password' => $password, 'name' => $name]);
+        $_SESSION['user'] = ['id' => $userId, 'email' => $email, 'name' => $name];
+        $this->json(['success' => true, 'message' => 'Регистрация успешна', 'user' => $_SESSION['user']]);
     }
 
     public function logout(): void

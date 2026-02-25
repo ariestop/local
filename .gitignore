@@ -3,6 +3,7 @@ composer.lock
 .env
 *.log
 .DS_Store
+public/images/
 Thumbs.db
 .idea/
 .vscode/
