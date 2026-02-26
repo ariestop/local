@@ -65,7 +65,7 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label">Фотографии (до 5 шт.)</label>
-                    <input type="file" name="photos[]" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                    <input type="file" name="photos[]" id="addPhotosInput" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Телефон *</label>

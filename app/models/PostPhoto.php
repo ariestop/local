@@ -74,4 +74,14 @@ class PostPhoto
         $stmt->execute([$postId]);
         return (int) $stmt->fetchColumn();
     }
+
+    public function updateSortOrder(int $postId, array $filenamesInOrder): void
+    {
+        foreach ($filenamesInOrder as $sortOrder => $filename) {
+            $filename = basename(trim($filename));
+            if ($filename === '') continue;
+            $stmt = $this->db->prepare("UPDATE post_photo SET sort_order = ? WHERE post_id = ? AND filename = ?");
+            $stmt->execute([$sortOrder, $postId, $filename]);
+        }
+    }
 }

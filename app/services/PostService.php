@@ -134,6 +134,12 @@ class PostService
                 $this->imageService->deletePhoto($userId, $id, $fn);
             }
         }
+        $photoOrder = is_string($input['photo_order'] ?? '') ? explode(',', $input['photo_order']) : [];
+        $photoOrder = array_map('trim', array_map('basename', $photoOrder));
+        $existingInOrder = array_values(array_filter($photoOrder, fn($f) => $f !== '' && $f !== '__new__'));
+        if (!empty($existingInOrder)) {
+            $this->photoRepo->updateSortOrder($id, $existingInOrder);
+        }
         $currentCount = $this->photoRepo->countByPostId($id);
         $remainingSlots = max(0, 5 - $currentCount);
         $photos = $this->normalizeFilesArray($files['photos'] ?? $files);

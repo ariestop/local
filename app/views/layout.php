@@ -24,6 +24,55 @@
         .btn-loading .btn-spinner { display: inline-block; width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: -0.15em; margin-right: 0.35em; }
         @keyframes spin { to { transform: rotate(360deg); } }
         #toastContainer { position: fixed; bottom: 1rem; right: 1rem; z-index: 1100; }
+
+        /* Skeleton / lazy */
+        .skeleton-row { opacity: 0; animation: skeletonFadeIn 0.35s ease forwards; }
+        .skeleton-row:nth-child(1) { animation-delay: 0.02s; }
+        .skeleton-row:nth-child(2) { animation-delay: 0.04s; }
+        .skeleton-row:nth-child(3) { animation-delay: 0.06s; }
+        .skeleton-row:nth-child(4) { animation-delay: 0.08s; }
+        .skeleton-row:nth-child(5) { animation-delay: 0.1s; }
+        .skeleton-row:nth-child(n+6) { animation-delay: 0.12s; }
+        @keyframes skeletonFadeIn { to { opacity: 1; } }
+        .img-loading { background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%); background-size: 200% 100%; animation: skeletonShimmer 1s infinite; }
+        @keyframes skeletonShimmer { to { background-position: 200% 0; } }
+
+        /* Photo preview */
+        .photo-preview-area, .photo-preview-area-edit { margin-bottom: 0.75rem; }
+        .photo-preview-list { display: flex; flex-wrap: wrap; gap: 0.5rem; min-height: 80px; padding: 0.5rem; background: #f8f9fa; border-radius: 8px; }
+        .photo-preview-item { position: relative; width: 80px; height: 60px; flex-shrink: 0; border-radius: 6px; overflow: hidden; cursor: grab; border: 2px solid transparent; transition: border-color 0.2s; }
+        .photo-preview-item:hover { border-color: var(--accent); }
+        .photo-preview-item.dragging { opacity: 0.5; cursor: grabbing; }
+        .photo-preview-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .photo-preview-remove { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%; background: rgba(0,0,0,0.6); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .photo-preview-remove:hover { background: #dc3545; }
+        .photo-preview-delete { position: absolute; bottom: 0; left: 0; right: 0; margin: 0; padding: 2px 4px; background: rgba(0,0,0,0.6); font-size: 11px; color: #fff; }
+        .photo-preview-delete input { margin-right: 4px; }
+
+        /* Copy phone */
+        .copy-phone-btn { padding: 0.2rem 0.5rem; font-size: 0.8rem; }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .navbar .container { padding-left: 0.75rem; padding-right: 0.75rem; }
+            .main-content .container { padding-left: 0.75rem; padding-right: 0.75rem; }
+            .table-responsive { margin: 0 -0.75rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .table { font-size: 0.9rem; }
+            .table th, .table td { padding: 0.5rem 0.4rem; }
+            .posts-mobile .table thead { display: none; }
+            .posts-mobile .table tbody tr { display: block; margin-bottom: 0.75rem; border: 1px solid #dee2e6; border-radius: 8px; padding: 0.75rem; background: #fff; }
+            .posts-mobile .table tbody td { display: block; border: none; padding: 0.25rem 0; }
+            .posts-mobile .table tbody td::before { content: attr(data-label); font-weight: 600; display: inline-block; min-width: 90px; }
+            .posts-mobile .table tbody td.cost { font-size: 1.1rem; }
+            .detail-photo-wrap { border-radius: 8px; overflow: hidden; }
+            .detail-photo-wrap img { max-height: 280px; }
+            .photo-preview-item { width: 70px; height: 52px; }
+        }
+        @media (max-width: 576px) {
+            .btn-group-mobile { flex-direction: column; width: 100%; }
+            .btn-group-mobile .btn { width: 100%; }
+            .pagination { flex-wrap: wrap; justify-content: center; }
+        }
     </style>
 </head>
 <body>
@@ -142,5 +191,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="/assets/app.js"></script>
+    <script src="/assets/ux.js"></script>
 </body>
 </html>

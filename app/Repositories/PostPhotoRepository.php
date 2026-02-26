@@ -51,4 +51,9 @@ class PostPhotoRepository
     {
         return $this->model->getMaxSortOrder($postId);
     }
+
+    public function updateSortOrder(int $postId, array $filenamesInOrder): void
+    {
+        $this->model->updateSortOrder($postId, $filenamesInOrder);
+    }
 }

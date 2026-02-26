@@ -8,9 +8,9 @@
     <?php endif; ?>
 </div>
 
-<div class="card border-0 shadow-sm">
+<div class="card border-0 shadow-sm posts-mobile">
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 posts-table">
             <thead>
                 <tr>
                     <th>Дата</th>
@@ -25,15 +25,15 @@
             <tbody>
                 <?php foreach ($posts as $p): ?>
                 <tr>
-                    <td class="text-nowrap text-muted small"><?= date('d/m', strtotime($p['created_at'])) ?></td>
-                    <td><?= htmlspecialchars($p['action_name']) ?></td>
-                    <td><?= htmlspecialchars($p['object_name']) ?></td>
-                    <td>
+                    <td class="text-nowrap text-muted small" data-label="Дата"><?= date('d/m', strtotime($p['created_at'])) ?></td>
+                    <td data-label="Действие"><?= htmlspecialchars($p['action_name']) ?></td>
+                    <td data-label="Объект"><?= htmlspecialchars($p['object_name']) ?></td>
+                    <td data-label="Адрес">
                         <a href="/detail/<?= (int)$p['id'] ?>" class="text-dark text-decoration-none"><?= htmlspecialchars($p['city_name'] . ', ' . $p['area_name'] . ' р-н., ' . $p['street']) ?></a>
                     </td>
-                    <td><?= (int)$p['room'] ?></td>
-                    <td><?= (int)$p['m2'] ?></td>
-                    <td class="cost"><?= number_format((int)$p['cost'], 0, '', ' ') ?></td>
+                    <td data-label="Комнат"><?= (int)$p['room'] ?></td>
+                    <td data-label="М²"><?= (int)$p['m2'] ?></td>
+                    <td class="cost" data-label="Цена"><?= number_format((int)$p['cost'], 0, '', ' ') ?> ₽</td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
