@@ -102,8 +102,31 @@
 
 ## Фронтенд
 
-- Формы логина/регистрации: `app.js` → fetch с FormData
-- Добавление объявления: `addForm` → fetch /add
-- Редактирование: `editForm` → fetch /edit/{id}
-- Удаление: кнопка → confirm → fetch /delete/{id}
-- Районы по городу: JS в add.php, edit.php — areasByCity из PHP
+**Vue.js 3** + Bootstrap 5. Один корень Vue монтируется на `#vue-app`, в `mounted()` привязываются обработчики к формам и кнопкам.
+
+### Подключаемые скрипты (layout.php)
+
+| Файл | Назначение |
+|------|------------|
+| api.js | `apiPost()`, `showToast()`, `showError()`, `hideError()`, `setButtonLoading()`, `validateCostInForm()` |
+| ux.js | Skeleton, lazy load, превью фото (add/edit), drag & drop, `syncAddFormFiles`, `syncEditFormFiles` |
+| vue-app.js | Все формы (login, register, add, edit, forgot, reset), кнопки избранного/удаления, пагинация, галерея, city/area |
+
+### Формы
+
+- **loginForm, registerForm** — модалки в layout, submit через `apiPost`
+- **addForm** — валидация цены, sync фото, `apiPost('/add')`
+- **editForm** — sync фото, `delete_photos`, `photo_order`, `apiPost('/edit/{id}')`
+- **forgotForm, resetForm** — восстановление пароля
+- **Районы по городу** — `window.areasByCity`, `window.editCityId`, `window.editAreaId` (add.php, edit.php)
+
+### Кнопки
+
+- `.btn-favorite`, `.btn-favorite-detail` — toggle избранного (`/api/favorite/toggle`)
+- `.btn-remove-favorite` — убрать из избранного (на странице /favorites)
+- `.btn-delete-post` — удаление объявления (`/delete/{id}`)
+
+### Дополнительно
+
+- Пагинация — `pageInput`, `pageGoBtn`
+- Галерея на detail — `window.detailPhotos`, лайтбокс

@@ -214,8 +214,8 @@
     }
 
     function syncAddFormFiles(form) {
-        const list = form.querySelector('#addPhotoPreviewList');
-        const input = form.querySelector('input[name="photos[]"]');
+        const list = form?.querySelector('#addPhotoPreviewList');
+        const input = form?.querySelector('input[name="photos[]"]');
         if (!list || !input) return;
         const dt = new DataTransfer();
         list.querySelectorAll('.photo-preview-item').forEach(el => {
@@ -225,8 +225,8 @@
     }
 
     function syncEditFormFiles(form) {
-        const list = form.querySelector('.photo-preview-list-edit');
-        const input = form.querySelector('input[name="photos[]"]');
+        const list = form?.querySelector('.photo-preview-list-edit');
+        const input = form?.querySelector('input[name="photos[]"]');
         if (!list || !input) return;
         const dt = new DataTransfer();
         list.querySelectorAll('.photo-preview-item[data-new]').forEach(el => {
@@ -235,41 +235,8 @@
         input.files = dt.files;
     }
 
-    // Override form submit to sync files in correct order
-    document.getElementById('addForm')?.addEventListener('submit', function() {
-        syncAddFormFiles(this);
-        const list = this.querySelector('#addPhotoPreviewList');
-        if (list) {
-            const order = [...list.querySelectorAll('.photo-preview-item')].map(el => el._file ? 'f' : '').filter(Boolean);
-            let hi = this.querySelector('input[name="photo_order"]');
-            if (!hi && order.length) {
-                hi = document.createElement('input');
-                hi.type = 'hidden';
-                hi.name = 'photo_order';
-                this.appendChild(hi);
-            }
-            if (hi) hi.value = order.length ? '1' : '';
-        }
-    }, true);
-
-    document.getElementById('editForm')?.addEventListener('submit', function() {
-        syncEditFormFiles(this);
-        const list = this.querySelector('.photo-preview-list-edit');
-        const delInput = this.querySelector('#deletePhotos');
-        if (list && delInput) {
-            const toDel = [];
-            list.querySelectorAll('.photo-delete:checked').forEach(cb => toDel.push(cb.value));
-            delInput.value = toDel.join(',');
-            const order = [];
-            list.querySelectorAll('.photo-preview-item').forEach(el => {
-                if (el.dataset.filename && !toDel.includes(el.dataset.filename)) order.push(el.dataset.filename);
-                if (el.dataset.new && el._file) order.push('__new__');
-            });
-            let hi = this.querySelector('input[name="photo_order"]');
-            if (!hi) { hi = document.createElement('input'); hi.type = 'hidden'; hi.name = 'photo_order'; this.appendChild(hi); }
-            hi.value = order.join(',');
-        }
-    }, true);
+    window.syncAddFormFiles = syncAddFormFiles;
+    window.syncEditFormFiles = syncEditFormFiles;
 
     // Copy phone
     function initCopyPhone() {

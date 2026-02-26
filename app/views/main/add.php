@@ -86,23 +86,4 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const areasByCity = <?= json_encode($areasByCity ?? []) ?>;
-    const maxPrice = parseInt(document.getElementById('costInput')?.dataset.max || '999000000', 10);
-    document.getElementById('citySelect').addEventListener('change', function() {
-        const sid = this.value;
-        const sel = document.getElementById('areaSelect');
-        sel.innerHTML = '<option value="">Выберите...</option>';
-        if (sid && areasByCity[sid]) {
-            areasByCity[sid].forEach(a => {
-                const opt = document.createElement('option');
-                opt.value = a.id;
-                opt.textContent = a.name;
-                sel.appendChild(opt);
-            });
-        }
-    });
-
-});
-</script>
+<script>window.areasByCity = <?= json_encode($areasByCity ?? []) ?>;</script>

@@ -21,7 +21,7 @@ class UserController extends Controller
     public function login(): void
     {
         if (!$this->validateCsrf()) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
             return;
         }
         if ($this->getLoggedUser()) {
@@ -33,9 +33,7 @@ class UserController extends Controller
             $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 400);
             return;
         }
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        ensure_session();
         $_SESSION['user'] = $result['user'];
         $this->json(['success' => true, 'user' => $result['user']]);
     }
@@ -43,7 +41,7 @@ class UserController extends Controller
     public function register(): void
     {
         if (!$this->validateCsrf()) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
             return;
         }
         $expected = $_SESSION['captcha'] ?? '';
@@ -79,9 +77,7 @@ class UserController extends Controller
             $this->render('main/verify-email', ['success' => false, 'error' => $result['error']]);
             return;
         }
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        ensure_session();
         $_SESSION['user'] = $result['user'];
         $this->render('main/verify-email', ['success' => true]);
     }
@@ -138,18 +134,14 @@ class UserController extends Controller
             $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 400);
             return;
         }
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        ensure_session();
         $_SESSION['user'] = $result['user'];
         $this->json(['success' => true, 'message' => 'Пароль изменён']);
     }
 
     public function logout(): void
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        ensure_session();
         unset($_SESSION['user']);
         $this->redirect('/');
     }

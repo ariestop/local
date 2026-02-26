@@ -42,6 +42,13 @@
 - Путь: `public/images/{user_id}/{post_id}/{base}_{w}x{h}.{ext}`
 - Размеры: 200×150, 400×300, 1200×675
 
+## JavaScript и Vue
+
+- Скрипты: api.js (утилиты), ux.js (UX-логика), vue-app.js (формы и кнопки)
+- Vue 3: один корень на `#vue-app`, обработчики в `mounted()`
+- Данные из PHP: `window.areasByCity`, `window.editCityId`, `window.editAreaId`, `window.detailPhotos`
+- Формы: submit через `apiPost`, ошибки через `showError`/`hideError`
+
 ## Конфигурация
 
 - `app/config/config.php` — возвращает массив

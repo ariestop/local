@@ -33,9 +33,7 @@ class ApiController extends Controller
 
     public function captcha(): void
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        ensure_session();
         $code = substr(str_shuffle('ABCDEFGHJKLMNPQRSTUVWXYZ23456789'), 0, 5);
         $_SESSION['captcha'] = $code;
 
@@ -59,7 +57,7 @@ class ApiController extends Controller
     public function toggleFavorite(): void
     {
         if (!$this->validateCsrf()) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности'], 403);
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
             return;
         }
         $user = $this->getLoggedUser();

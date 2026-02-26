@@ -49,30 +49,3 @@
         </table>
     </div>
 </div>
-
-<script>
-document.querySelectorAll('.btn-delete-post').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-        if (!confirm('Удалить это объявление? Фотографии и папка будут удалены.')) return;
-        const id = this.dataset.id;
-        try {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-            const r = await fetch('/delete/' + id, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrf }
-            });
-            const text = await r.text();
-            let data = {};
-            try { data = JSON.parse(text); } catch (e) {}
-            if (data.success) {
-                location.reload();
-            } else {
-                alert(data.error || 'Ошибка удаления');
-            }
-        } catch (err) {
-            alert('Ошибка сети');
-        }
-    });
-});
-</script>

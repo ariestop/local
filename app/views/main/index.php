@@ -132,47 +132,5 @@ $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort]
         <button type="button" class="btn btn-sm btn-outline-secondary" id="pageGoBtn">Перейти</button>
     </div>
 </nav>
-<script>
-(function() {
-    var input = document.getElementById('pageInput');
-    var btn = document.getElementById('pageGoBtn');
-    if (!input || !btn) return;
-    function go() {
-        var p = parseInt(input.value, 10);
-        var max = parseInt(input.max, 10);
-        if (p >= 1 && p <= max) {
-            var params = new URLSearchParams(location.search);
-            params.set('page', String(p));
-            location.href = '?' + params.toString();
-        }
-    }
-    btn.onclick = go;
-    input.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); go(); } };
-})();
-</script>
 <?php endif; ?>
 
-<?php if ($user): ?>
-<script>
-document.querySelectorAll('.btn-favorite').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-        const id = this.dataset.id;
-        const fd = new FormData();
-        fd.append('post_id', id);
-        fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
-        try {
-            const r = await fetch('/api/favorite/toggle', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-            const data = await r.json();
-            if (data.success) {
-                this.classList.toggle('btn-danger', data.added);
-                this.classList.toggle('btn-outline-secondary', !data.added);
-                this.querySelector('i').classList.toggle('bi-heart-fill', data.added);
-                this.querySelector('i').classList.toggle('bi-heart', !data.added);
-                this.title = data.added ? 'Убрать из избранного' : 'В избранное';
-                if (window.showToast) window.showToast(data.added ? 'Добавлено в избранное' : 'Убрано из избранного');
-            }
-        } catch (e) {}
-    });
-});
-</script>
-<?php endif; ?>

@@ -81,16 +81,12 @@ class MainController extends Controller
     {
         $this->requireAuth();
         if (!$this->validateCsrf()) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
             return;
         }
         $user = $this->getLoggedUser();
         $result = $this->postService->create($_POST, $_FILES, (int) $user['id']);
-        if (!$result['success']) {
-            $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 400);
-            return;
-        }
-        $this->json(['success' => true, 'id' => $result['id']]);
+        $this->jsonResult($result);
     }
 
     public function myPosts(): void
@@ -124,33 +120,24 @@ class MainController extends Controller
     {
         $this->requireAuth();
         if (!$this->validateCsrf()) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
             return;
         }
         $user = $this->getLoggedUser();
         $result = $this->postService->update((int) $id, $_POST, $_FILES, (int) $user['id']);
-        if (!$result['success']) {
-            $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 400);
-            return;
-        }
-        $this->json(['success' => true, 'id' => (int) $id]);
+        $this->jsonResult($result);
     }
 
     public function delete(string $id): void
     {
         $this->requireAuth();
-        $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
-        if ($token === '' || !hash_equals(csrf_token(), $token)) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+        if (!$this->validateCsrf()) {
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
             return;
         }
         $user = $this->getLoggedUser();
         $result = $this->postService->delete((int) $id, (int) $user['id']);
-        if (!$result['success']) {
-            $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 404);
-            return;
-        }
-        $this->json(['success' => true]);
+        $this->jsonResult($result);
     }
 
     public function favorites(): void

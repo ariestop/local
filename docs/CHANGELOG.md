@@ -1,5 +1,14 @@
 # История изменений
 
+## Фронтенд: Vue.js и централизация JS (2025)
+
+- **Vue.js 3** — все формы и кнопки управляются через vue-app.js
+- **api.js** — общие хелперы: apiPost, showToast, showError, hideError, setButtonLoading, validateCostInForm
+- **ux.js** — skeleton, lazy load, превью фото, drag & drop; экспорт syncAddFormFiles, syncEditFormFiles
+- **vue-app.js** — bindLogin, bindRegister, bindAddForm, bindEditForm, bindForgotForm, bindResetForm, bindFavoriteButtons, bindRemoveFavorite, bindDeleteButtons, bindRegEmailCheck, bindCityArea, bindPagination, bindDetailGallery
+- **app.js** — удалён из layout (дублирующийся код перенесён в api.js + vue-app.js)
+- Inline-скрипты удалены из index, detail, favorites, edit-advert, add, edit, forgot-password, reset-password
+
 ## Архитектура и качество кода
 
 - **Composer** — composer.json с vlucas/phpdotenv, monolog; PSR-4 autoload

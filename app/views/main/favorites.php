@@ -47,27 +47,3 @@
         </table>
     </div>
 </div>
-
-<script>
-document.querySelectorAll('.btn-remove-favorite').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-        const id = this.dataset.id;
-        try {
-            const fd = new FormData();
-            fd.append('post_id', id);
-            fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
-            const r = await fetch('/api/favorite/toggle', {
-                method: 'POST',
-                body: fd,
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            const data = await r.json();
-            if (data.success && !data.added) {
-                this.closest('tr').remove();
-                if (window.showToast) window.showToast('Убрано из избранного');
-            }
-        } catch (e) {}
-    });
-});
-</script>

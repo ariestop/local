@@ -71,97 +71,10 @@ $photos = $photos ?? [];
         </div>
     </div>
 </div>
-<script>
-(function(){
-    var photos = <?= json_encode(array_map(fn($ph) => [
+<script>window.detailPhotos = <?= json_encode(array_map(fn($ph) => [
         'thumb' => photo_thumb_url($uid, $pid, $ph['filename'], 400, 300),
         'large' => photo_large_url($uid, $pid, $ph['filename']),
         'thumbSmall' => photo_thumb_url($uid, $pid, $ph['filename'], 200, 150)
-    ], $photos)) ?>;
-    var idx = 0;
-    var modal = document.getElementById('photoModal');
-    var detailImg = document.getElementById('detailPhoto');
-    var lightboxImg = document.getElementById('lightboxImg');
-    var thumbs = document.getElementById('lightboxThumbs');
-    var counter = document.getElementById('lightboxCounter');
-    var detailCounter = document.getElementById('detailCounter');
-    var detailPrev = document.getElementById('detailPrev');
-    var detailNext = document.getElementById('detailNext');
-    var detailThumbs = document.getElementById('detailThumbs');
-    var prev = document.getElementById('lightboxPrev');
-    var next = document.getElementById('lightboxNext');
-    function renderDetailThumbs() {
-        if (!detailThumbs) return;
-        detailThumbs.innerHTML = '';
-        photos.forEach(function(p, i) {
-            var a = document.createElement('a');
-            a.href = '#';
-            a.className = 'detail-thumb' + (i === idx ? ' border border-2 border-primary' : ' opacity-75');
-            a.style.cssText = 'width:60px;height:45px;display:block;overflow:hidden;border-radius:4px;flex-shrink:0';
-            a.innerHTML = '<img src="' + p.thumbSmall + '" style="width:100%;height:100%;object-fit:cover">';
-            a.onclick = function(e) { e.preventDefault(); idx = i; updateDetail(); };
-            detailThumbs.appendChild(a);
-        });
-    }
-    function updateDetail() {
-        if (detailImg) detailImg.src = photos[idx].thumb;
-        if (detailCounter) detailCounter.textContent = (idx + 1) + ' / ' + photos.length;
-        renderDetailThumbs();
-    }
-    (function init() { renderDetailThumbs(); })();
-    function showLightbox() {
-        lightboxImg.src = photos[idx].large;
-        counter.textContent = (idx + 1) + ' / ' + photos.length;
-        thumbs.innerHTML = '';
-        photos.forEach(function(p, i) {
-            var a = document.createElement('a');
-            a.href = '#';
-            a.className = 'lightbox-thumb' + (i === idx ? ' border border-2 border-white' : ' opacity-60');
-            a.style.cssText = 'width:60px;height:45px;display:block;overflow:hidden;border-radius:4px;flex-shrink:0';
-            a.innerHTML = '<img src="' + p.thumbSmall + '" style="width:100%;height:100%;object-fit:cover">';
-            a.onclick = function(e) { e.preventDefault(); idx = i; showLightbox(); };
-            thumbs.appendChild(a);
-        });
-    }
-    function prevImg() { idx = (idx - 1 + photos.length) % photos.length; }
-    function nextImg() { idx = (idx + 1) % photos.length; }
-    if (detailImg) detailImg.onclick = function() { bootstrap.Modal.getOrCreateInstance(modal).show(); showLightbox(); };
-    if (detailPrev) detailPrev.onclick = function() { prevImg(); updateDetail(); };
-    if (detailNext) detailNext.onclick = function() { nextImg(); updateDetail(); };
-    prev.onclick = function() { prevImg(); showLightbox(); };
-    next.onclick = function() { nextImg(); showLightbox(); };
-    modal.addEventListener('show.bs.modal', function() { showLightbox(); });
-    modal.addEventListener('hidden.bs.modal', function() { updateDetail(); });
-    document.addEventListener('keydown', function(e) {
-        if (modal.classList.contains('show')) {
-            if (e.key === 'ArrowLeft') { prevImg(); showLightbox(); }
-            else if (e.key === 'ArrowRight') { nextImg(); showLightbox(); }
-        }
-    });
-})();
-</script>
+    ], $photos)) ?>;</script>
 <?php endif; ?>
 
-<?php if ($user): ?>
-<script>
-document.querySelector('.btn-favorite-detail')?.addEventListener('click', async function() {
-    const btn = this;
-    const id = btn.dataset.id;
-    const fd = new FormData();
-    fd.append('post_id', id);
-    fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
-    try {
-        const r = await fetch('/api/favorite/toggle', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        const data = await r.json();
-        if (data.success) {
-            btn.classList.toggle('btn-danger', data.added);
-            btn.classList.toggle('btn-outline-secondary', !data.added);
-            btn.querySelector('i').classList.toggle('bi-heart-fill', data.added);
-            btn.querySelector('i').classList.toggle('bi-heart', !data.added);
-            btn.innerHTML = (data.added ? '<i class="bi bi-heart-fill"></i> В избранном' : '<i class="bi bi-heart"></i> В избранное');
-            if (window.showToast) window.showToast(data.added ? 'Добавлено в избранное' : 'Убрано из избранного');
-        }
-    } catch (e) {}
-});
-</script>
-<?php endif; ?>
