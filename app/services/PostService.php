@@ -67,6 +67,7 @@ class PostService
             'cities' => $this->refRepo->getCities(),
             'areasByCity' => $this->refRepo->getAreasByCity(),
             'max_price' => $this->maxPrice,
+            'max_photo_bytes' => ImageService::getMaxSizeBytes(),
         ];
     }
 
@@ -78,6 +79,7 @@ class PostService
             'cities' => $this->refRepo->getCities(),
             'areasByCity' => $this->refRepo->getAreasByCity(),
             'max_price' => $this->maxPrice,
+            'max_photo_bytes' => ImageService::getMaxSizeBytes(),
         ];
     }
 

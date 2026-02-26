@@ -4,6 +4,44 @@
 (function() {
     'use strict';
     const MAX_PHOTOS = 5;
+    const MAX_BYTES = 5 * 1024 * 1024;
+
+    function showPhotoSizeError(msg) {
+        var existing = document.getElementById('photo-size-overlay');
+        if (existing) existing.remove();
+        var box = document.createElement('div');
+        box.id = 'photo-size-overlay';
+        box.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;max-width:90%;padding:16px 24px;background:#dc3545;color:#fff;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-size:14px;font-family:system-ui,sans-serif;';
+        box.textContent = msg;
+        document.body.appendChild(box);
+        setTimeout(function() {
+            if (box.parentNode) box.remove();
+        }, 5000);
+    }
+
+    function filterOversizeFiles(input) {
+        var maxBytes = parseInt(input && input.getAttribute && input.getAttribute('data-max-bytes') || String(MAX_BYTES), 10);
+        if (!input || !input.files || !input.files.length) return;
+        var rejected = [];
+        var dt = new DataTransfer();
+        for (var i = 0; i < input.files.length; i++) {
+            if (input.files[i].size > maxBytes) {
+                rejected.push(input.files[i].name);
+            } else {
+                dt.items.add(input.files[i]);
+            }
+        }
+        if (rejected.length) {
+            var maxMb = maxBytes / 1024 / 1024;
+            var msg = dt.files.length
+                ? 'Файл(ы) ' + rejected.slice(0, 3).join(', ') + (rejected.length > 3 ? ' и др.' : '') + ' не добавлены (превышают ' + maxMb + ' МБ). Остальные загружены.'
+                : (rejected.length === 1
+                    ? 'Файл превышает макс. размер (' + maxMb + ' МБ).'
+                    : 'Все файлы превышают макс. размер (' + maxMb + ' МБ).');
+            showPhotoSizeError(msg);
+            input.files = dt.files;
+        }
+    }
 
     // Skeleton: fade-in for table rows
     function initTableSkeleton() {
@@ -249,6 +287,13 @@
             });
         });
     }
+
+    document.addEventListener('change', function(e) {
+        var input = e.target;
+        if (input && input.type === 'file' && input.hasAttribute && input.hasAttribute('data-max-bytes')) {
+            filterOversizeFiles(input);
+        }
+    }, true);
 
     document.addEventListener('DOMContentLoaded', function() {
         initTableSkeleton();

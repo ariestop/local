@@ -83,7 +83,8 @@ $photos = $photos ?? [];
                         <?php endforeach; ?>
                     </div>
                     <?php endif; ?>
-                    <input type="file" name="photos[]" id="photosInput" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                    <input type="file" name="photos[]" id="photosInput" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple data-max-bytes="<?= (int)($max_photo_bytes ?? 5242880) ?>">
+                    <div class="form-text">Макс. <?= round((int)($max_photo_bytes ?? 5242880) / 1024 / 1024) ?> МБ на файл</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Телефон *</label>
