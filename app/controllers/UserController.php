@@ -102,8 +102,12 @@ class UserController extends Controller
             $this->json(['success' => false, 'error' => 'Введите email'], 400);
             return;
         }
-        $result = $this->authService->requestPasswordReset($email);
-        $this->json($result);
+        try {
+            $result = $this->authService->requestPasswordReset($email);
+            $this->json($result);
+        } catch (\Throwable $e) {
+            $this->json(['success' => false, 'error' => 'Временная ошибка сервера. Попробуйте позже.'], 500);
+        }
     }
 
     public function resetPassword(): void

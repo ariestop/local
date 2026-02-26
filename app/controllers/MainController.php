@@ -166,13 +166,4 @@ class MainController extends Controller
             'user' => $user,
         ]);
     }
-
-    protected function render(string $view, array $data = []): void
-    {
-        $data['view'] = $view;
-        $data['config'] = $this->config;
-        $data['user'] = $data['user'] ?? $this->getLoggedUser();
-        extract($data);
-        require dirname(__DIR__) . '/views/layout.php';
-    }
 }

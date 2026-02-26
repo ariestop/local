@@ -8,10 +8,17 @@ class Router
 {
     private array $routes = ['GET' => [], 'POST' => []];
     private ?Container $container = null;
+    private string $basePath = '';
 
     public function setContainer(Container $container): self
     {
         $this->container = $container;
+        return $this;
+    }
+
+    public function setBasePath(string $path): self
+    {
+        $this->basePath = rtrim($path, '/');
         return $this;
     }
 
@@ -47,6 +54,12 @@ class Router
         $path = '/' . trim($path, '/');
         if ($path === '') {
             $path = '/';
+        }
+        $base = $this->basePath !== ''
+            ? $this->basePath
+            : rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/');
+        if ($base !== '' && $base !== '/' && str_starts_with($path, $base)) {
+            $path = substr($path, strlen($base)) ?: '/';
         }
 
         $handlers = $this->routes[$method] ?? [];

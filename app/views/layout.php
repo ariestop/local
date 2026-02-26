@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
+    <meta name="app-base" content="<?= htmlspecialchars(rtrim(parse_url($config['app']['url'] ?? '', PHP_URL_PATH) ?: '', '/')) ?>">
     <title><?= htmlspecialchars($config['app']['name'] ?? 'Доска объявлений') ?> - продажа недвижимости</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -190,8 +191,8 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.5.25/dist/vue.global.prod.js"></script>
     <script src="/assets/app.js"></script>
     <script src="/assets/ux.js"></script>
 </body>
