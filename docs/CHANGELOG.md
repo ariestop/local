@@ -1,11 +1,16 @@
 # История изменений
 
-## PHP Debug Bar (2025)
+## PHP Debug Bar и PSR-4 (2025)
 
+### PHP Debug Bar
 - `composer require --dev php-debugbar/php-debugbar`
-- Включение только при `APP_ENV=dev` в .env
-- `app/debugbar.php` — инициализация, `layout.php` — вывод
-- Раздача ассетов через `index.php` (GET /debugbar/*)
+- Включение при `APP_ENV=dev` в .env; `config.php` — `app.env`, fallback через `getenv()`
+- `app/debugbar.php` — инициализация, `layout.php` — `renderHead()` и `render()`
+- Раздача ассетов через `index.php` (GET /debugbar/*), путь `vendor/.../resources`
+
+### PSR-4
+- Папки приведены в соответствие: `Controllers/`, `Core/`, `Models/`, `Services/`
+- `Repositories/` и `Log/` уже соответствовали
 
 ## Фронтенд: Vue.js и централизация JS (2025)
 

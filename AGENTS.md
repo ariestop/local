@@ -1,6 +1,6 @@
 # Руководство для AI-агентов
 
-> Обновлено: Vue.js, api.js, ux.js, vue-app.js, структура frontend.
+> Обновлено: PSR-4, PHP Debug Bar, APP_ENV, Vue.js frontend.
 
 Документ для быстрого понимания проекта при работе с ним в качестве ИИ-ассистента.
 
@@ -18,18 +18,19 @@
 | Сессии | PHP Session, имя `m2saratov_sess` |
 | Хранилище фото | `public/images/{user_id}/{post_id}/` |
 
-## Структура каталогов
+## Структура каталогов (PSR-4)
 
 ```
 app/
   config/         — config.php, routes.php
-  core/           — Router, Database, Controller, Container
-  models/         — Post, User, Reference, PostPhoto
-  Repositories/   — PostRepository, UserRepository, PostPhotoRepository, ReferenceRepository
-  Services/       — PostService, AuthService, ImageService
+  Core/           — Router, Database, Controller, Container
+  Models/         — Post, User, Reference, PostPhoto, Favorite
+  Repositories/   — PostRepository, UserRepository, PostPhotoRepository, ReferenceRepository, FavoriteRepository
+  Services/       — PostService, AuthService, ImageService, MailService
   Log/            — LoggerInterface, NullLogger (MonologAdapter при composer)
-  controllers/    — MainController, UserController, ApiController
+  Controllers/    — MainController, UserController, ApiController
   bootstrap.php   — инициализация, контейнер
+  debugbar.php    — PHP Debug Bar (при APP_ENV=dev)
   views/          — layout.php + main/*.php
   helpers.php     — photo_thumb_url(), photo_large_url()
 public/
@@ -110,7 +111,8 @@ public/
 
 ## Конфиг и миграции
 
-- `.env` / `.env.local`: DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
+- `.env` / `.env.local`: APP_ENV (dev/production), DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, APP_URL
+- `APP_ENV=dev` — включает PHP Debug Bar (только для разработки!)
 - `php install.php` — создаёт БД, импортирует `public/infosee2_m2sar.sql`, выполняет все миграции из `migrations/`
 - Новые миграции: добавляйте файлы `NNN_название.sql` или `NNN_название.php` в `migrations/` — install.php применяет их автоматически
 

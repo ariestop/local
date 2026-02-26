@@ -47,14 +47,15 @@ MVC-сайт на PHP 8.5+, Bootstrap 5, MySQL 8.0. Аналог m2saratov.ru. �
 ```
 app/
   config/         — конфигурация, routes.php
-  core/           — Router, Database, Controller, Container
-  models/         — Post, User, Reference, PostPhoto
-  Repositories/   — PostRepository, UserRepository, PostPhotoRepository, ReferenceRepository
-  Services/       — PostService, AuthService, ImageService
+  Core/           — Router, Database, Controller, Container
+  Models/         — Post, User, Reference, PostPhoto, Favorite
+  Repositories/   — PostRepository, UserRepository, PostPhotoRepository, ReferenceRepository, FavoriteRepository
+  Services/       — PostService, AuthService, ImageService, MailService
   Log/            — LoggerInterface, NullLogger, MonologAdapter
-  controllers/    — MainController, UserController, ApiController
+  Controllers/    — MainController, UserController, ApiController
   views/          — layout + main/*.php
   bootstrap.php   — загрузка, контейнер
+  debugbar.php    — PHP Debug Bar (только при APP_ENV=dev)
 public/
   index.php       — точка входа
   assets/         — api.js, ux.js, vue-app.js

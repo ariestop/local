@@ -3,7 +3,7 @@
 ## PHP
 
 - `declare(strict_types=1);` в начале каждого файла
-- PSR-4 автозагрузка: namespace `App\`, файлы в `app/`
+- PSR-4: namespace `App\`, папки соответствуют (`App\Controllers` → `app/Controllers/`, `App\Core` → `app/Core/`, `App\Models` → `app/Models/`, `App\Services` → `app/Services/`)
 - Контроллеры наследуют `App\Core\Controller`
 - Модели получают PDO в конструкторе
 
@@ -52,5 +52,6 @@
 ## Конфигурация
 
 - `app/config/config.php` — возвращает массив
-- Ключи: db (host, dbname, charset, user, password), app (name, url, timezone), session (name, lifetime)
+- Ключи: db (host, dbname, charset, user, password), app (name, url, env, timezone), session (name, lifetime)
+- `app.env` — окружение (dev/production); `APP_ENV=dev` включает Debug Bar
 - Не коммитить пароли в репозиторий; использовать .env при необходимости

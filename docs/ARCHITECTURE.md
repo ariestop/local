@@ -21,17 +21,16 @@
 - **Controller** — HTTP-слой, валидация CSRF, вызов сервисов
 - **Service** — бизнес-логика (PostService, AuthService)
 - **Repository** — доступ к данным, фасад над Model
-- **Model** — работа с БД (Post, User, PostPhoto, Reference)
+- **Model** — работа с БД (Post, User, PostPhoto, Reference, Favorite)
 
 ## Компоненты
 
 ### Точка входа
 
 `public/index.php`:
-- Подключает autoload, helpers
-- Запускает сессию
-- Регистрирует маршруты
-- Вызывает `Router::dispatch()`
+- Загружает bootstrap (autoload, .env, контейнер)
+- При `APP_ENV=dev` — инициализирует Debug Bar, раздаёт ассеты GET /debugbar/*
+- Регистрирует маршруты и вызывает `Router::dispatch()`
 
 ### Роутинг
 
