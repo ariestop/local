@@ -21,7 +21,14 @@ $photos = $photos ?? [];
 <?php endif; ?>
 <div class="card border-0 shadow-sm">
     <div class="card-body">
-        <h2 class="h5 mb-4"><?= htmlspecialchars($post['action_name'] . ' ' . $post['object_name']) ?></h2>
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <h2 class="h5 mb-0"><?= htmlspecialchars($post['action_name'] . ' ' . $post['object_name']) ?></h2>
+            <?php if ($user): ?>
+            <button type="button" class="btn btn-sm <?= !empty($isFavorite) ? 'btn-danger' : 'btn-outline-secondary' ?> btn-favorite-detail" data-id="<?= (int)$post['id'] ?>" title="<?= !empty($isFavorite) ? 'Убрать из избранного' : 'В избранное' ?>">
+                <i class="bi bi-heart<?= !empty($isFavorite) ? '-fill' : '' ?>"></i> <?= !empty($isFavorite) ? 'В избранном' : 'В избранное' ?>
+            </button>
+            <?php endif; ?>
+        </div>
         <p class="text-muted small mb-2"><?= date('d.m.Y', strtotime($post['created_at'])) ?></p>
         <dl class="row mb-0">
             <dt class="col-sm-3">Адрес</dt>
@@ -132,5 +139,29 @@ $photos = $photos ?? [];
         }
     });
 })();
+</script>
+<?php endif; ?>
+
+<?php if ($user): ?>
+<script>
+document.querySelector('.btn-favorite-detail')?.addEventListener('click', async function() {
+    const btn = this;
+    const id = btn.dataset.id;
+    const fd = new FormData();
+    fd.append('post_id', id);
+    fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
+    try {
+        const r = await fetch('/api/favorite/toggle', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await r.json();
+        if (data.success) {
+            btn.classList.toggle('btn-danger', data.added);
+            btn.classList.toggle('btn-outline-secondary', !data.added);
+            btn.querySelector('i').classList.toggle('bi-heart-fill', data.added);
+            btn.querySelector('i').classList.toggle('bi-heart', !data.added);
+            btn.innerHTML = (data.added ? '<i class="bi bi-heart-fill"></i> В избранном' : '<i class="bi bi-heart"></i> В избранное');
+            if (window.showToast) window.showToast(data.added ? 'Добавлено в избранное' : 'Убрано из избранного');
+        }
+    } catch (e) {}
+});
 </script>
 <?php endif; ?>

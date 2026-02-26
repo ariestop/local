@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Container;
 use App\Core\Controller;
+use App\Repositories\FavoriteRepository;
 use App\Repositories\UserRepository;
 
 class ApiController extends Controller
@@ -14,9 +15,11 @@ class ApiController extends Controller
     {
         parent::__construct($container);
         $this->userRepo = $container->get(UserRepository::class);
+        $this->favoriteRepo = $container->get(FavoriteRepository::class);
     }
 
     private UserRepository $userRepo;
+    private FavoriteRepository $favoriteRepo;
 
     public function checkEmail(): void
     {
@@ -51,5 +54,25 @@ class ApiController extends Controller
         header('Cache-Control: no-cache, no-store');
         imagepng($img);
         imagedestroy($img);
+    }
+
+    public function toggleFavorite(): void
+    {
+        if (!$this->validateCsrf()) {
+            $this->json(['success' => false, 'error' => 'Ошибка безопасности'], 403);
+            return;
+        }
+        $user = $this->getLoggedUser();
+        if (!$user) {
+            $this->json(['success' => false, 'error' => 'Требуется авторизация', 'added' => false], 401);
+            return;
+        }
+        $postId = (int) ($_POST['post_id'] ?? $_GET['post_id'] ?? 0);
+        if (!$postId) {
+            $this->json(['success' => false, 'error' => 'Некорректный ID'], 400);
+            return;
+        }
+        $added = $this->favoriteRepo->toggle((int) $user['id'], $postId);
+        $this->json(['success' => true, 'added' => $added]);
     }
 }

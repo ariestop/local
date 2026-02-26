@@ -56,11 +56,89 @@ class UserController extends Controller
             return;
         }
         unset($_SESSION['captcha']);
+        if (empty($result['email_confirm_required'])) {
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $_SESSION['user'] = $result['user'];
+            $this->json(['success' => true, 'message' => 'Регистрация успешна', 'user' => $result['user']]);
+        } else {
+            $this->json(['success' => true, 'message' => 'Проверьте почту для подтверждения регистрации']);
+        }
+    }
+
+    public function verifyEmail(): void
+    {
+        $token = trim($_GET['token'] ?? '');
+        if (!$token) {
+            $this->render('main/verify-email', ['success' => false, 'error' => 'Нет токена']);
+            return;
+        }
+        $result = $this->authService->verifyEmail($token);
+        if (!$result['success']) {
+            $this->render('main/verify-email', ['success' => false, 'error' => $result['error']]);
+            return;
+        }
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         $_SESSION['user'] = $result['user'];
-        $this->json(['success' => true, 'message' => 'Регистрация успешна', 'user' => $result['user']]);
+        $this->render('main/verify-email', ['success' => true]);
+    }
+
+    public function forgotPassword(): void
+    {
+        $this->render('main/forgot-password', []);
+    }
+
+    public function forgotPasswordSubmit(): void
+    {
+        if (!$this->validateCsrf()) {
+            $this->json(['success' => false, 'error' => 'Ошибка безопасности'], 403);
+            return;
+        }
+        $email = trim($_POST['email'] ?? '');
+        if (!$email) {
+            $this->json(['success' => false, 'error' => 'Введите email'], 400);
+            return;
+        }
+        $result = $this->authService->requestPasswordReset($email);
+        $this->json($result);
+    }
+
+    public function resetPassword(): void
+    {
+        $token = trim($_GET['token'] ?? '');
+        if (!$token) {
+            $this->render('main/reset-password', ['error' => 'Нет токена', 'token' => '']);
+            return;
+        }
+        $this->render('main/reset-password', ['token' => $token, 'error' => null]);
+    }
+
+    public function resetPasswordSubmit(): void
+    {
+        if (!$this->validateCsrf()) {
+            $this->json(['success' => false, 'error' => 'Ошибка безопасности'], 403);
+            return;
+        }
+        $token = trim($_POST['token'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $password2 = $_POST['password2'] ?? '';
+        if ($password !== $password2) {
+            $this->json(['success' => false, 'error' => 'Пароли не совпадают'], 400);
+            return;
+        }
+        $result = $this->authService->resetPassword($token, $password);
+        if (!$result['success']) {
+            $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 400);
+            return;
+        }
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $_SESSION['user'] = $result['user'];
+        $this->json(['success' => true, 'message' => 'Пароль изменён']);
     }
 
     public function logout(): void

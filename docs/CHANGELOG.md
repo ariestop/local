@@ -22,7 +22,7 @@
 
 ### Функциональность
 - **Пагинация** на главной (20 объявлений на страницу)
-- **Скрипт миграций** — `php scripts/migrate.php` (post_photo, user.password)
+- **Установка БД** — `php install.php` (импорт дампа + миграции из `migrations/`)
 
 ### Конфигурация
 - **.env** — поддержка .env и .env.local для настроек БД (DB_HOST, DB_NAME, DB_USER, DB_PASSWORD)

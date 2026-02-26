@@ -101,7 +101,8 @@ public/
 ## Конфиг и миграции
 
 - `.env` / `.env.local`: DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
-- `php scripts/migrate.php` — post_photo, user.password
+- `php install.php` — создаёт БД, импортирует `public/infosee2_m2sar.sql`, выполняет все миграции из `migrations/`
+- Новые миграции: добавляйте файлы `NNN_название.sql` или `NNN_название.php` в `migrations/` — install.php применяет их автоматически
 
 ## Тестовый вход
 

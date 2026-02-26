@@ -53,7 +53,7 @@
             const data = await r.json();
             if (data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('registerModal'))?.hide();
-                showToast('Регистрация успешна');
+                showToast(data.message || 'Регистрация успешна');
                 location.reload();
             } else {
                 showError('registerError', data.error || 'Ошибка');

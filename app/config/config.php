@@ -14,7 +14,8 @@ return [
     ],
     'app' => [
         'name' => 'Квадратный метр',
-        'url' => '',
+        'url' => $env('APP_URL', 'http://localhost/test/public'),
+        'email_confirm_required' => filter_var($env('EMAIL_CONFIRM_REQUIRED', '0'), FILTER_VALIDATE_BOOLEAN),
         'timezone' => 'Europe/Moscow',
         'max_price' => (int) ($env('MAX_PRICE', '999000000')),
     ],

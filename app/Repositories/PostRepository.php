@@ -18,14 +18,24 @@ class PostRepository
         return $this->model->count();
     }
 
-    public function getList(int $limit, int $offset): array
+    public function countFiltered(array $filters): int
     {
-        return $this->model->getList($limit, $offset);
+        return $this->model->countFiltered($filters);
+    }
+
+    public function getList(int $limit, int $offset, array $filters = [], string $sort = 'date_desc'): array
+    {
+        return $this->model->getList($limit, $offset, $filters, $sort);
     }
 
     public function getById(int $id): ?array
     {
         return $this->model->getById($id);
+    }
+
+    public function getByIds(array $ids): array
+    {
+        return $this->model->getByIds($ids);
     }
 
     public function getByUserId(int $userId): array

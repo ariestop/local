@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Container;
 use App\Core\Controller;
+use App\Repositories\FavoriteRepository;
 use App\Services\PostService;
 
 class MainController extends Controller
@@ -14,21 +15,39 @@ class MainController extends Controller
     {
         parent::__construct($container);
         $this->postService = $container->get(PostService::class);
+        $this->favoriteRepo = $container->get(FavoriteRepository::class);
     }
 
     private PostService $postService;
+    private FavoriteRepository $favoriteRepo;
 
     public function index(): void
     {
         $perPage = 20;
         $page = max(1, (int) ($_GET['page'] ?? 1));
-        $result = $this->postService->getPaginatedList($perPage, $page);
+        $filters = [
+            'city_id' => $_GET['city_id'] ?? '',
+            'action_id' => $_GET['action_id'] ?? '',
+            'room' => $_GET['room'] ?? '',
+            'price_min' => $_GET['price_min'] ?? '',
+            'price_max' => $_GET['price_max'] ?? '',
+        ];
+        $sort = in_array($_GET['sort'] ?? '', ['date_desc', 'date_asc', 'price_asc', 'price_desc'])
+            ? $_GET['sort'] : 'date_desc';
+        $result = $this->postService->getPaginatedList($perPage, $page, $filters, $sort);
+        $user = $this->getLoggedUser();
+        $favoriteIds = $user ? $this->favoriteRepo->getPostIdsByUserId((int) $user['id']) : [];
         $this->render('main/index', [
             'posts' => $result['posts'],
-            'user' => $this->getLoggedUser(),
+            'user' => $user,
             'page' => $result['page'],
             'totalPages' => $result['totalPages'],
             'total' => $result['total'],
+            'filters' => $filters,
+            'sort' => $sort,
+            'actions' => $this->postService->getFormData()['actions'] ?? [],
+            'cities' => $this->postService->getFormData()['cities'] ?? [],
+            'favoriteIds' => $favoriteIds,
         ]);
     }
 
@@ -41,10 +60,13 @@ class MainController extends Controller
             $this->render('main/404');
             return;
         }
+        $user = $this->getLoggedUser();
+        $isFavorite = $user && $this->favoriteRepo->has((int) $user['id'], $postId);
         $this->render('main/detail', [
             'post' => $data['post'],
             'photos' => $data['photos'],
-            'user' => $this->getLoggedUser(),
+            'user' => $user,
+            'isFavorite' => $isFavorite,
         ]);
     }
 
@@ -129,6 +151,20 @@ class MainController extends Controller
             return;
         }
         $this->json(['success' => true]);
+    }
+
+    public function favorites(): void
+    {
+        $this->requireAuth();
+        $user = $this->getLoggedUser();
+        $ids = $this->favoriteRepo->getPostIdsByUserId((int) $user['id']);
+        $posts = $this->postService->getPostsByIds($ids);
+        $firstPhotos = $this->postService->getFirstPhotosForPosts($ids);
+        $this->render('main/favorites', [
+            'posts' => $posts,
+            'firstPhotos' => $firstPhotos,
+            'user' => $user,
+        ]);
     }
 
     protected function render(string $view, array $data = []): void

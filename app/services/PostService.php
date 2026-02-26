@@ -26,12 +26,12 @@ class PostService
         return $this->maxPrice;
     }
 
-    public function getPaginatedList(int $perPage, int $page): array
+    public function getPaginatedList(int $perPage, int $page, array $filters = [], string $sort = 'date_desc'): array
     {
         $page = max(1, $page);
         $offset = ($page - 1) * $perPage;
-        $total = $this->postRepo->count();
-        $posts = $this->postRepo->getList($perPage, $offset);
+        $total = $this->postRepo->countFiltered($filters);
+        $posts = $this->postRepo->getList($perPage, $offset, $filters, $sort);
         $totalPages = $total > 0 ? (int) ceil($total / $perPage) : 1;
         return [
             'posts' => $posts,
@@ -176,6 +176,11 @@ class PostService
     public function getByUserId(int $userId): array
     {
         return $this->postRepo->getByUserId($userId);
+    }
+
+    public function getPostsByIds(array $ids): array
+    {
+        return $this->postRepo->getByIds($ids);
     }
 
     public function getFirstPhotosForPosts(array $postIds): array

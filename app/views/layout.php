@@ -92,6 +92,7 @@
                 <div class="d-flex gap-2">
                     <?php if ($user): ?>
                     <a class="navbar-text me-2 text-decoration-none text-dark" href="/edit-advert"><?= htmlspecialchars($user['name']) ?></a>
+                    <a class="btn btn-outline-secondary btn-sm me-1" href="/favorites" title="Избранное"><i class="bi bi-heart"></i></a>
                     <a class="btn btn-outline-secondary btn-sm" href="/logout">Выход</a>
                     <?php else: ?>
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">Вход</button>
@@ -137,6 +138,7 @@
                         <div class="mb-3">
                             <label class="form-label">Пароль *</label>
                             <input type="password" name="password" class="form-control" required>
+                            <a href="/forgot-password" class="small text-muted">Забыли пароль?</a>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Войти</button>
                     </form>
