@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
     <meta name="app-base" content="<?= htmlspecialchars(rtrim(parse_url($config['app']['url'] ?? '', PHP_URL_PATH) ?: '', '/')) ?>">
+    <?php if (!empty($GLOBALS['_debugbar_renderer'])): echo $GLOBALS['_debugbar_renderer']->renderHead(); endif; ?>
     <title><?= htmlspecialchars($config['app']['name'] ?? 'Доска объявлений') ?> - продажа недвижимости</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -196,5 +197,6 @@
     <script src="/assets/api.js"></script>
     <script src="/assets/ux.js"></script>
     <script src="/assets/vue-app.js"></script>
+    <?php if (!empty($GLOBALS['_debugbar_renderer'])): echo $GLOBALS['_debugbar_renderer']->render(); endif; ?>
 </body>
 </html>

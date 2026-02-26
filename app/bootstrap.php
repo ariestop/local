@@ -29,4 +29,9 @@ if (session_status() === PHP_SESSION_NONE) {
 
 $container = new \App\Core\Container($config);
 
+// Debug Bar (только dev) — basePath передаём позже из index.php
+if (file_exists($root . '/vendor/autoload.php')) {
+    require_once $root . '/app/debugbar.php';
+}
+
 return $container;

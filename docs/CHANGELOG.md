@@ -1,5 +1,12 @@
 # История изменений
 
+## PHP Debug Bar (2025)
+
+- `composer require --dev php-debugbar/php-debugbar`
+- Включение только при `APP_ENV=dev` в .env
+- `app/debugbar.php` — инициализация, `layout.php` — вывод
+- Раздача ассетов через `index.php` (GET /debugbar/*)
+
 ## Фронтенд: Vue.js и централизация JS (2025)
 
 - **Vue.js 3** — все формы и кнопки управляются через vue-app.js
