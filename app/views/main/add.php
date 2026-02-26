@@ -5,7 +5,7 @@
     <div class="card-body">
         <h2 class="h5 mb-4">Добавить объявление</h2>
         <div id="addError" class="alert alert-danger d-none"></div>
-        <form id="addForm" enctype="multipart/form-data">
+        <form id="addForm" enctype="multipart/form-data" data-max-price="<?= (int)($max_price ?? 999000000) ?>"><?= csrf_field() ?>
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">Действие *</label>
@@ -65,7 +65,7 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label">Фотографии (до 5 шт.)</label>
-                    <input type="file" name="photos[]" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                    <input type="file" name="photos[]" id="addPhotosInput" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Телефон *</label>
@@ -73,7 +73,9 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Цена (руб.) *</label>
-                    <input type="text" name="cost" class="form-control" placeholder="1250000" required>
+                    <input type="text" name="cost" id="costInput" class="form-control" placeholder="1250000" required
+                           data-max="<?= (int)($max_price ?? 999000000) ?>">
+                    <div id="costHint" class="form-text">Макс. <?= number_format((int)($max_price ?? 999000000), 0, '', ' ') ?> руб.</div>
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Добавить</button>
@@ -86,6 +88,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const areasByCity = <?= json_encode($areasByCity ?? []) ?>;
+    const maxPrice = parseInt(document.getElementById('costInput')?.dataset.max || '999000000', 10);
     document.getElementById('citySelect').addEventListener('change', function() {
         const sid = this.value;
         const sel = document.getElementById('areaSelect');
@@ -99,5 +102,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
 });
 </script>

@@ -11,10 +11,15 @@ abstract class Controller
     protected PDO $db;
     protected array $config;
 
-    public function __construct()
+    public function __construct(?Container $container = null)
     {
-        $this->config = require dirname(__DIR__) . '/config/config.php';
-        $this->db = Database::getConnection($this->config['db']);
+        if ($container !== null) {
+            $this->config = $container->getConfig();
+            $this->db = $container->get(PDO::class);
+        } else {
+            $this->config = require dirname(__DIR__) . '/config/config.php';
+            $this->db = Database::getConnection($this->config['db']);
+        }
     }
 
     protected function json(mixed $data, int $status = 200): void
@@ -54,5 +59,20 @@ abstract class Controller
     {
         return isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
             strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    }
+
+    protected function validateCsrf(): bool
+    {
+        $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        return $token !== '' && hash_equals(csrf_token(), $token);
+    }
+
+    protected function render(string $view, array $data = []): void
+    {
+        $data['view'] = $view;
+        $data['config'] = $this->config;
+        $data['user'] = $data['user'] ?? $this->getLoggedUser();
+        extract($data);
+        require dirname(__DIR__) . '/views/layout.php';
     }
 }

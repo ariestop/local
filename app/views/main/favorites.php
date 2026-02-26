@@ -2,8 +2,7 @@
     <a href="/" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> К списку</a>
 </div>
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h4 mb-0">Мои объявления</h1>
-    <a href="/add" class="btn btn-primary">Добавить объявление</a>
+    <h1 class="h4 mb-0">Избранное</h1>
 </div>
 
 <div class="card border-0 shadow-sm posts-mobile">
@@ -17,14 +16,14 @@
                     <th>Город / Район</th>
                     <th>Комнат</th>
                     <th>М²</th>
-                    <th>Цена (руб.)</th>
-                    <th>Действия</th>
+                    <th>Цена</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($posts)): ?>
                 <tr>
-                    <td colspan="8" class="text-muted text-center py-4">У вас пока нет объявлений. <a href="/add">Добавить объявление</a></td>
+                    <td colspan="8" class="text-muted text-center py-4">Нет избранных объявлений. <a href="/">Добавьте</a> их со страницы объявлений.</td>
                 </tr>
                 <?php else: ?>
                 <?php foreach ($posts as $p): ?>
@@ -38,9 +37,8 @@
                     <td data-label="Комнат"><?= (int)$p['room'] ?></td>
                     <td data-label="М²"><?= (int)$p['m2'] ?></td>
                     <td class="cost" data-label="Цена"><?= number_format((int)$p['cost'], 0, '', ' ') ?> ₽</td>
-                    <td data-label="Действия" class="d-flex gap-1 flex-wrap">
-                        <a href="/edit/<?= (int)$p['id'] ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Редактировать</a>
-                        <button type="button" class="btn btn-outline-danger btn-sm btn-delete-post" data-id="<?= (int)$p['id'] ?>"><i class="bi bi-trash"></i> Удалить</button>
+                    <td data-label="">
+                        <button type="button" class="btn btn-outline-danger btn-sm btn-remove-favorite" data-id="<?= (int)$p['id'] ?>" title="Убрать из избранного"><i class="bi bi-heart-fill"></i></button>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -51,28 +49,25 @@
 </div>
 
 <script>
-document.querySelectorAll('.btn-delete-post').forEach(function(btn) {
+document.querySelectorAll('.btn-remove-favorite').forEach(function(btn) {
     btn.addEventListener('click', async function() {
-        if (!confirm('Удалить это объявление? Фотографии и папка будут удалены.')) return;
         const id = this.dataset.id;
         try {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-            const r = await fetch('/delete/' + id, {
+            const fd = new FormData();
+            fd.append('post_id', id);
+            fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
+            const r = await fetch('/api/favorite/toggle', {
                 method: 'POST',
+                body: fd,
                 credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrf }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            const text = await r.text();
-            let data = {};
-            try { data = JSON.parse(text); } catch (e) {}
-            if (data.success) {
-                location.reload();
-            } else {
-                alert(data.error || 'Ошибка удаления');
+            const data = await r.json();
+            if (data.success && !data.added) {
+                this.closest('tr').remove();
+                if (window.showToast) window.showToast('Убрано из избранного');
             }
-        } catch (err) {
-            alert('Ошибка сети');
-        }
+        } catch (e) {}
     });
 });
 </script>

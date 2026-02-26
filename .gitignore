@@ -1,9 +1,12 @@
 /vendor/
 composer.lock
 .env
+.env.local
 *.log
 .DS_Store
 public/images/
+storage/logs/
 Thumbs.db
 .idea/
 .vscode/
+.cursor/

@@ -12,20 +12,69 @@ class Post
         private PDO $db
     ) {}
 
-    public function getList(int $limit = 50, int $offset = 0): array
+    public function count(): int
     {
-        $sql = "SELECT p.id, p.user_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house,
+        return $this->countFiltered([]);
+    }
+
+    public function countFiltered(array $filters): int
+    {
+        $where = $this->buildWhere($filters);
+        $sql = "SELECT COUNT(*) FROM post p JOIN action a ON p.action_id = a.id JOIN objectsale o ON p.object_id = o.id JOIN city c ON p.city_id = c.id JOIN area ar ON p.area_id = ar.id" . $where['sql'];
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($where['params']);
+        return (int) $stmt->fetchColumn();
+    }
+
+    private function buildWhere(array $filters): array
+    {
+        $conds = [];
+        $params = [];
+        if (!empty($filters['city_id'])) {
+            $conds[] = 'p.city_id = ?';
+            $params[] = (int) $filters['city_id'];
+        }
+        if (!empty($filters['action_id'])) {
+            $conds[] = 'p.action_id = ?';
+            $params[] = (int) $filters['action_id'];
+        }
+        if (isset($filters['room']) && $filters['room'] !== '') {
+            $conds[] = 'p.room = ?';
+            $params[] = (int) $filters['room'];
+        }
+        if (!empty($filters['price_min'])) {
+            $conds[] = 'p.cost >= ?';
+            $params[] = (int) $filters['price_min'];
+        }
+        if (!empty($filters['price_max'])) {
+            $conds[] = 'p.cost <= ?';
+            $params[] = (int) $filters['price_max'];
+        }
+        return ['sql' => $conds ? ' WHERE ' . implode(' AND ', $conds) : '', 'params' => $params];
+    }
+
+    public function getList(int $limit = 50, int $offset = 0, array $filters = [], string $sort = 'date_desc'): array
+    {
+        $where = $this->buildWhere($filters);
+        $order = match ($sort) {
+            'price_asc' => 'p.cost ASC',
+            'price_desc' => 'p.cost DESC',
+            'date_asc' => 'p.created_at ASC',
+            default => 'p.created_at DESC',
+        };
+        $sql = "SELECT p.id, p.user_id, p.action_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house,
                 a.name AS action_name, o.name AS object_name, c.name AS city_name, ar.name AS area_name
                 FROM post p
                 JOIN action a ON p.action_id = a.id
                 JOIN objectsale o ON p.object_id = o.id
                 JOIN city c ON p.city_id = c.id
-                JOIN area ar ON p.area_id = ar.id
-                ORDER BY p.created_at DESC
-                LIMIT ? OFFSET ?";
+                JOIN area ar ON p.area_id = ar.id"
+                . $where['sql'] . " ORDER BY " . $order . " LIMIT ? OFFSET ?";
+        $params = array_merge($where['params'], [$limit, $offset]);
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
-        $stmt->bindValue(2, $offset, PDO::PARAM_INT);
+        foreach ($params as $i => $v) {
+            $stmt->bindValue($i + 1, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -44,6 +93,25 @@ class Post
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
+    }
+
+    public function getByIds(array $ids): array
+    {
+        if (empty($ids)) return [];
+        $ids = array_map('intval', $ids);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT p.id, p.user_id, p.action_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house,
+                a.name AS action_name, o.name AS object_name, c.name AS city_name, ar.name AS area_name
+                FROM post p
+                JOIN action a ON p.action_id = a.id
+                JOIN objectsale o ON p.object_id = o.id
+                JOIN city c ON p.city_id = c.id
+                JOIN area ar ON p.area_id = ar.id
+                WHERE p.id IN ($placeholders)
+                ORDER BY FIELD(p.id, " . implode(',', $ids) . ")";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($ids);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getByUserId(int $userId): array
