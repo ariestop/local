@@ -114,8 +114,10 @@ public/
 
 - `.env` / `.env.local`: APP_ENV (dev/production), DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, APP_URL
 - `APP_ENV=dev` — включает PHP Debug Bar (только для разработки!)
-- `php install.php` — создаёт БД, импортирует `public/infosee2_m2sar.sql`, выполняет все миграции из `migrations/`
-- Новые миграции: добавляйте файлы `NNN_название.sql` или `NNN_название.php` в `migrations/` — install.php применяет их автоматически
+- `php install.php` — безопасный install/update скрипт:
+  - 1-й запуск: создаёт БД, импортирует `public/infosee2_m2sar.sql`, затем применяет миграции;
+  - последующие запуски: baseline-импорт пропускается, применяются только pending-миграции.
+- Новые миграции: добавляйте файлы `NNN_название.sql` или `NNN_название.php` в `migrations/` — install.php применяет только те, которых нет в `schema_migrations`
 
 ## Тестовый вход
 

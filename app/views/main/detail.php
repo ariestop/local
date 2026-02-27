@@ -40,11 +40,14 @@ $photos = $photos ?? [];
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
             <h2 class="h5 mb-0"><?= htmlspecialchars($post['action_name'] . ' ' . $post['object_name']) ?></h2>
-            <?php if ($user): ?>
-            <button type="button" class="btn btn-sm <?= !empty($isFavorite) ? 'btn-danger' : 'btn-outline-secondary' ?> btn-favorite-detail" data-id="<?= (int)$post['id'] ?>" title="<?= !empty($isFavorite) ? 'Убрать из избранного' : 'В избранное' ?>">
-                <i class="bi bi-heart<?= !empty($isFavorite) ? '-fill' : '' ?>"></i> <?= !empty($isFavorite) ? 'В избранном' : 'В избранное' ?>
-            </button>
-            <?php endif; ?>
+            <div class="d-flex flex-column align-items-end gap-2">
+                <div class="small text-muted">Просмотров: <?= number_format((int)($post['view_count'] ?? 0), 0, '', ' ') ?></div>
+                <?php if ($user): ?>
+                <button type="button" class="btn btn-sm <?= !empty($isFavorite) ? 'btn-danger' : 'btn-outline-secondary' ?> btn-favorite-detail" data-id="<?= (int)$post['id'] ?>" title="<?= !empty($isFavorite) ? 'Убрать из избранного' : 'В избранное' ?>">
+                    <i class="bi bi-heart<?= !empty($isFavorite) ? '-fill' : '' ?>"></i> <?= !empty($isFavorite) ? 'В избранном' : 'В избранное' ?>
+                </button>
+                <?php endif; ?>
+            </div>
         </div>
         <p class="text-muted small mb-2"><?= date('d.m.Y', strtotime($post['created_at'])) ?></p>
         <dl class="row mb-0">
@@ -56,8 +59,6 @@ $photos = $photos ?? [];
             <dd class="col-sm-9"><?= (int)$post['m2'] ?> м²</dd>
             <dt class="col-sm-3">Цена</dt>
             <dd class="col-sm-9 fw-bold"><?= number_format((int)$post['cost'], 0, '', ' ') ?> руб.</dd>
-            <dt class="col-sm-3">Просмотров</dt>
-            <dd class="col-sm-9"><?= number_format((int)($post['view_count'] ?? 0), 0, '', ' ') ?></dd>
             <dt class="col-sm-3">Телефон</dt>
             <dd class="col-sm-9 d-flex align-items-center gap-2 flex-wrap">
                 <span><?= htmlspecialchars($post['phone']) ?></span>

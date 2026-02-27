@@ -30,7 +30,8 @@ final class Database
                     http_response_code(500);
                     echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ошибка</title></head><body>';
                     echo '<h1>Ошибка подключения к БД</h1>';
-                    echo '<p>Импортируйте базу: откройте <a href="/install.php">/install.php</a> или загрузите infosee2_m2sar.sql через phpMyAdmin.</p>';
+                    echo '<p>Выполните в терминале из корня проекта: <code>php install.php</code>.</p>';
+                    echo '<p>Первый запуск делает bootstrap (дамп + миграции), повторные запуски применяют только новые миграции.</p>';
                     echo '<p>Проверьте настройки в app/config/config.php</p>';
                     echo '</body></html>';
                     exit;
