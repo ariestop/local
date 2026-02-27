@@ -21,7 +21,6 @@ const EXIT_OK = 0;
 const EXIT_ERROR = 1;
 const EXIT_UNSAFE_DB = 2;
 const EXIT_BAD_USAGE = 3;
-const FALLBACK_DUMP_PATH = 'public/infosee2_m2sar.sql';
 
 function out(string $level, string $message): void
 {
@@ -45,8 +44,9 @@ TXT;
 
 function normalizePath(string $root, string $path): string
 {
+    $path = trim($path);
     if ($path === '') {
-        return $root . DIRECTORY_SEPARATOR . DEFAULT_DUMP_PATH;
+        throw new RuntimeException('DB_DUMP_PATH is empty. Set DB_DUMP_PATH in .env (e.g. public/infosee2_m2sar.sql).');
     }
     if (str_starts_with($path, DIRECTORY_SEPARATOR)) {
         return $path;
@@ -57,8 +57,20 @@ function normalizePath(string $root, string $path): string
 
 function resolveDumpPath(array $dbConfig, string $root): string
 {
-    $configured = (string) ($dbConfig['dump_path'] ?? DEFAULT_DUMP_PATH);
+    if (!array_key_exists('dump_path', $dbConfig)) {
+        throw new RuntimeException('DB_DUMP_PATH is not configured. Add DB_DUMP_PATH to .env/.env.example and app/config/config.php.');
+    }
+    $configured = (string) $dbConfig['dump_path'];
     return normalizePath($root, $configured);
+}
+
+function preflightDumpPath(string $dumpPath): void
+{
+    out('INFO', "Configured DB dump path: {$dumpPath}");
+    if (!is_file($dumpPath)) {
+        throw new RuntimeException("DB dump file not found: {$dumpPath}. Check DB_DUMP_PATH in .env.");
+    }
+    out('INFO', 'DB dump file found.');
 }
 
 function connectServer(array $db): PDO
@@ -489,11 +501,6 @@ function loadAppConfig(string $root): array
     require $root . '/app/load_env.php';
     /** @var array $config */
     $config = require $root . '/app/config/config.php';
-
-    if (!defined('DEFAULT_DUMP_PATH')) {
-        define('DEFAULT_DUMP_PATH', (string) ($config['db']['dump_path'] ?? FALLBACK_DUMP_PATH));
-    }
-
     return $config;
 }
 
@@ -513,6 +520,8 @@ function runInstaller(array $opts, string $root): int
     }
 
     try {
+        preflightDumpPath($dumpPath);
+
         $serverPdo = connectServer($db);
         createDatabaseIfMissing($serverPdo, $db['dbname'], $dryRun);
 
