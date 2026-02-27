@@ -109,7 +109,11 @@
 |------|------------|
 | api.js | `apiPost()`, `showToast()`, `showError()`, `hideError()`, `setButtonLoading()`, `validateCostInForm()` |
 | ux.js | Skeleton, lazy load, превью фото (add/edit), drag & drop, `syncAddFormFiles`, `syncEditFormFiles` |
-| vue-app.js | Все формы (login, register, add, edit, forgot, reset), кнопки избранного/удаления, пагинация, галерея, city/area |
+| vue/shared.js | Общие Vue-методы (`apiPost`, city/area, пагинация, проверка email, login hint) |
+| vue/forms.js | Формы auth/add/edit/forgot/reset |
+| vue/favorites.js | Избранное и удаление объявлений |
+| vue/gallery.js | Галерея detail + лайтбокс |
+| vue-app.js | Тонкий bootstrap: объединяет методы модулей, определяет `data-page` и активирует только нужные bind-методы |
 
 ### Формы
 

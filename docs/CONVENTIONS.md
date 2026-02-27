@@ -3,7 +3,7 @@
 ## PHP
 
 - `declare(strict_types=1);` в начале каждого файла
-- PSR-4: namespace `App\`, папки соответствуют (`App\Controllers` → `app/Controllers/`, `App\Core` → `app/Core/`, `App\Models` → `app/Models/`, `App\Services` → `app/Services/`)
+- PSR-4: namespace `App\`, маппинг в `composer.json` соответствует текущим каталогам (`app/controllers`, `app/core`, `app/models`, `app/services`, `app/Repositories`, `app/Log`)
 - Контроллеры наследуют `App\Core\Controller`
 - Модели получают PDO в конструкторе
 
@@ -26,7 +26,7 @@
 
 - Формы: `method="POST"`, `enctype="multipart/form-data"` при загрузке файлов
 - AJAX: заголовок `X-Requested-With: XMLHttpRequest`
-- Ответы: JSON `{success: true|false, error?: string}`
+- Ответы: JSON-контракт `{success: true|false, error?: string, code?: number, retry_after?: number}`
 
 ## Работа с ценами
 
@@ -36,7 +36,7 @@
 
 ## Фотографии
 
-- Разрешения: JPEG, PNG, GIF, WebP
+- Разрешения: JPEG, PNG
 - Макс. размер файла: 5 МБ
 - Макс. количество: 5 на объявление
 - Путь: `public/images/{user_id}/{post_id}/{base}_{w}x{h}.{ext}`
@@ -44,8 +44,9 @@
 
 ## JavaScript и Vue
 
-- Скрипты: api.js (утилиты), ux.js (UX-логика), vue-app.js (формы и кнопки)
+- Скрипты: `api.js` (утилиты), `ux.js` (UX), `vue/*.js` (модули), `vue-app.js` (bootstrap)
 - Vue 3: один корень на `#vue-app`, обработчики в `mounted()`
+- Инициализация Vue page-aware: активные bind-методы определяются через `body[data-page]`
 - Данные из PHP: `window.areasByCity`, `window.editCityId`, `window.editAreaId`, `window.detailPhotos`
 - Формы: submit через `apiPost`, ошибки через `showError`/`hideError`
 
@@ -53,5 +54,6 @@
 
 - `app/config/config.php` — возвращает массив
 - Ключи: db (host, dbname, charset, user, password), app (name, url, env, timezone), session (name, lifetime)
-- `app.env` — окружение (dev/production); `APP_ENV=dev` включает Debug Bar
+- `.env` — окружение (dev/production); `APP_ENV=dev` включает Debug Bar, `APP_ENV=production` отключает debug-инструменты
+- Для auth legacy-режима: `AUTH_ALLOW_LEGACY_PASSWORD=1|0` (временный флаг миграции паролей)
 - Не коммитить пароли в репозиторий; использовать .env при необходимости

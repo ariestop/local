@@ -35,6 +35,8 @@ class MainController extends Controller
         $sort = in_array($_GET['sort'] ?? '', ['date_desc', 'date_asc', 'price_asc', 'price_desc'])
             ? $_GET['sort'] : 'date_desc';
         $result = $this->postService->getPaginatedList($perPage, $page, $filters, $sort);
+        $popularPosts = $this->postService->getPopular(5);
+        $activity = $this->postService->getActivity(7);
         $user = $this->getLoggedUser();
         $favoriteIds = $user ? $this->favoriteRepo->getPostIdsByUserId((int) $user['id']) : [];
         $this->render('main/index', [
@@ -48,6 +50,8 @@ class MainController extends Controller
             'actions' => $this->postService->getFormData()['actions'] ?? [],
             'cities' => $this->postService->getFormData()['cities'] ?? [],
             'favoriteIds' => $favoriteIds,
+            'popularPosts' => $popularPosts,
+            'activity' => $activity,
         ]);
     }
 
@@ -61,6 +65,8 @@ class MainController extends Controller
             return;
         }
         $user = $this->getLoggedUser();
+        $this->postService->registerView($postId, $user ? (int) $user['id'] : null);
+        $data['post']['view_count'] = (int) ($data['post']['view_count'] ?? 0) + 1;
         $isFavorite = $user && $this->favoriteRepo->has((int) $user['id'], $postId);
         $this->render('main/detail', [
             'post' => $data['post'],

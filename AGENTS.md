@@ -23,12 +23,12 @@
 ```
 app/
   config/         — config.php, routes.php
-  Core/           — Router, Database, Controller, Container
-  Models/         — Post, User, Reference, PostPhoto, Favorite
+  core/           — Router, Database, Controller, Container
+  models/         — Post, User, Reference, PostPhoto, Favorite
   Repositories/   — PostRepository, UserRepository, PostPhotoRepository, ReferenceRepository, FavoriteRepository
-  Services/       — PostService, AuthService, ImageService, MailService
+  services/       — PostService, AuthService, ImageService, MailService
   Log/            — LoggerInterface, NullLogger (MonologAdapter при composer)
-  Controllers/    — MainController, UserController, ApiController
+  controllers/    — MainController, UserController, ApiController
   bootstrap.php   — инициализация, контейнер
   debugbar.php    — PHP Debug Bar (при APP_ENV=dev)
   views/          — layout.php + main/*.php
@@ -37,7 +37,8 @@ public/
   index.php              — точка входа, роутинг
   assets/api.js          — apiPost, showToast, showError, hideError, setButtonLoading, validateCostInForm
   assets/ux.js           — skeleton, lazy load, превью фото, syncAddFormFiles, syncEditFormFiles
-  assets/vue-app.js      — все формы и кнопки (Vue 3)
+  assets/vue/*.js        — модули Vue (shared/forms/favorites/gallery)
+  assets/vue-app.js      — bootstrap Vue, объединяет модули
   images/                — загруженные фото (в .gitignore)
 ```
 
@@ -99,7 +100,7 @@ public/
 
 - Все PHP-файлы: `declare(strict_types=1);`
 - PSR-4 автозагрузка, namespace `App\`
-- Без Composer-зависимостей (чистый PHP)
+- Composer опционален: без него работает fallback autoload/.env и NullLogger
 - Цена в БД — целое число; в форме — строка с пробелами (number_format)
 - `preg_replace('/\D/', '', $cost)` при сохранении цены
 

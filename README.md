@@ -26,6 +26,17 @@ MVC-сайт на PHP 8.5+, Bootstrap 5, MySQL 8.0. Аналог m2saratov.ru. �
    - В `.env` укажите `APP_ENV=dev` — панель появится внизу страницы
    - В продакшене обязательно используйте `APP_ENV=production` (или не указывайте) — Debug Bar не загружается
 
+## Профили окружения (APP_ENV)
+
+- `APP_ENV=dev` — включается Debug Bar и dev-ассеты `/debugbar/*`
+- `APP_ENV=production` — Debug Bar и dev-обвязка отключены
+- Значение по умолчанию при отсутствии переменной: `production`
+
+## Auth migration flag
+
+- `AUTH_ALLOW_LEGACY_PASSWORD=1` — временно разрешает вход legacy-пользователей (plaintext/md5) с автоматическим переводом на `password_hash` при успешном логине.
+- `AUTH_ALLOW_LEGACY_PASSWORD=0` — отключает legacy-вход (использовать после завершения миграции паролей).
+
 ## Тестовый вход
 
 - Логин: seobot@qip.ru
@@ -41,24 +52,25 @@ MVC-сайт на PHP 8.5+, Bootstrap 5, MySQL 8.0. Аналог m2saratov.ru. �
 - **Избранное** (`/favorites`) — сохранённые объявления
 - **Редактирование** — поля и фотографии
 - **Удаление** — объявление, фото в БД и папка на диске
+- **Админ-отчёт** (`/admin-report`) — метрики просмотров, популярные объявления, активность и клиентские ошибки (доступ только для пользователя с `is_admin = 1`)
 
 ## Структура проекта
 
 ```
 app/
   config/         — конфигурация, routes.php
-  Core/           — Router, Database, Controller, Container
-  Models/         — Post, User, Reference, PostPhoto, Favorite
+  core/           — Router, Database, Controller, Container
+  models/         — Post, User, Reference, PostPhoto, Favorite
   Repositories/   — PostRepository, UserRepository, PostPhotoRepository, ReferenceRepository, FavoriteRepository
-  Services/       — PostService, AuthService, ImageService, MailService
+  services/       — PostService, AuthService, ImageService, MailService
   Log/            — LoggerInterface, NullLogger, MonologAdapter
-  Controllers/    — MainController, UserController, ApiController
+  controllers/    — MainController, UserController, ApiController
   views/          — layout + main/*.php
   bootstrap.php   — загрузка, контейнер
   debugbar.php    — PHP Debug Bar (только при APP_ENV=dev)
 public/
   index.php       — точка входа
-  assets/         — api.js, ux.js, vue-app.js
+  assets/         — api.js, ux.js, vue-app.js + vue/* (forms/favorites/gallery/shared)
   images/         — загруженные фото
 storage/logs/     — логи (при Monolog)
 docs/             — документация
@@ -72,3 +84,5 @@ docs/             — документация
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Архитектура и потоки данных |
 | [docs/DATABASE.md](docs/DATABASE.md) | Схема БД |
 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | Соглашения по коду |
+| [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | Smoke/regression/contract проверки |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Release и rollback процедуры |

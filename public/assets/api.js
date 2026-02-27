@@ -3,24 +3,112 @@
  */
 (function() {
     'use strict';
+    let clientErrorLock = false;
+    let lastClientErrorAt = 0;
+
+    function csrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.content || '';
+    }
+
+    async function reportClientError(payload) {
+        const now = Date.now();
+        if (clientErrorLock || now - lastClientErrorAt < 3000) return;
+        lastClientErrorAt = now;
+        clientErrorLock = true;
+        try {
+            await fetch('/api/client-error', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': csrfToken()
+                },
+                body: JSON.stringify(payload)
+            });
+        } catch (_e) {
+            // ignore recursive errors from reporter
+        } finally {
+            clientErrorLock = false;
+        }
+    }
+
+    function normalizeApiError(status, fallbackMessage, extra) {
+        return Object.assign({
+            success: false,
+            error: fallbackMessage || 'Ошибка запроса',
+            code: status || 500
+        }, extra || {});
+    }
 
     async function apiPost(url, formData) {
         const headers = { 'X-Requested-With': 'XMLHttpRequest' };
-        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+        const csrf = csrfToken();
         if (csrf) headers['X-CSRF-Token'] = csrf;
-        const r = await fetch(url, {
-            method: 'POST',
-            body: formData || new FormData(),
-            credentials: 'same-origin',
-            headers
-        });
-        const text = await r.text();
+
+        let response;
         try {
-            const m = text.match(/\{[\s\S]*\}/);
-            return m ? JSON.parse(m[0]) : {};
-        } catch {
-            return {};
+            response = await fetch(url, {
+                method: 'POST',
+                body: formData || new FormData(),
+                credentials: 'same-origin',
+                headers
+            });
+        } catch (e) {
+            reportClientError({
+                level: 'error',
+                message: 'Network error in apiPost',
+                url: url,
+                context: { error: String(e?.message || e) }
+            });
+            return normalizeApiError(0, 'Ошибка сети');
         }
+
+        const contentType = (response.headers.get('content-type') || '').toLowerCase();
+        let data = null;
+        if (contentType.includes('application/json')) {
+            try {
+                data = await response.json();
+            } catch {
+                data = null;
+            }
+        } else {
+            const text = await response.text();
+            try {
+                data = JSON.parse(text);
+            } catch {
+                data = null;
+            }
+            if (!data && !response.ok) {
+                reportClientError({
+                    level: 'error',
+                    message: 'Non-JSON server response',
+                    url: url,
+                    context: { status: response.status, preview: (text || '').slice(0, 200) }
+                });
+                return normalizeApiError(
+                    response.status,
+                    'Сервер вернул неожиданный ответ',
+                    { details: (text || '').trim().slice(0, 200) }
+                );
+            }
+        }
+
+        if (!data || typeof data !== 'object') {
+            return response.ok
+                ? { success: true }
+                : normalizeApiError(response.status, 'Ошибка сервера');
+        }
+
+        if (!response.ok) {
+            return normalizeApiError(
+                response.status,
+                data.error || data.message || 'Ошибка сервера',
+                { retry_after: data.retry_after ?? undefined }
+            );
+        }
+
+        return data;
     }
 
     function showToast(msg, type) {
@@ -76,4 +164,30 @@
     window.hideError = hideError;
     window.setButtonLoading = setButtonLoading;
     window.validateCostInForm = validateCostInForm;
+    window.reportClientError = reportClientError;
+
+    window.addEventListener('error', function(e) {
+        reportClientError({
+            level: 'error',
+            message: e.message || 'Unhandled client error',
+            url: window.location.pathname,
+            context: {
+                file: e.filename || '',
+                line: e.lineno || 0,
+                column: e.colno || 0
+            }
+        });
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+        const reason = e.reason;
+        reportClientError({
+            level: 'error',
+            message: 'Unhandled promise rejection',
+            url: window.location.pathname,
+            context: {
+                reason: typeof reason === 'string' ? reason : (reason?.message || JSON.stringify(reason || {}))
+            }
+        });
+    });
 })();

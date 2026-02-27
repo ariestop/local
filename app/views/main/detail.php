@@ -39,6 +39,8 @@ $photos = $photos ?? [];
             <dd class="col-sm-9"><?= (int)$post['m2'] ?> м²</dd>
             <dt class="col-sm-3">Цена</dt>
             <dd class="col-sm-9 fw-bold"><?= number_format((int)$post['cost'], 0, '', ' ') ?> руб.</dd>
+            <dt class="col-sm-3">Просмотров</dt>
+            <dd class="col-sm-9"><?= number_format((int)($post['view_count'] ?? 0), 0, '', ' ') ?></dd>
             <dt class="col-sm-3">Телефон</dt>
             <dd class="col-sm-9 d-flex align-items-center gap-2 flex-wrap">
                 <span><?= htmlspecialchars($post['phone']) ?></span>
@@ -51,6 +53,17 @@ $photos = $photos ?? [];
         </dl>
     </div>
 </div>
+<script>
+window.currentDetailPost = {
+    id: <?= (int)($post['id'] ?? 0) ?>,
+    title: <?= json_encode(trim(($post['action_name'] ?? '') . ' ' . ($post['object_name'] ?? ''))) ?>,
+    address: <?= json_encode(trim(($post['city_name'] ?? '') . ', ' . ($post['area_name'] ?? '') . ' р-н., ' . ($post['street'] ?? ''))) ?>,
+    room: <?= (int)($post['room'] ?? 0) ?>,
+    m2: <?= (int)($post['m2'] ?? 0) ?>,
+    cost: <?= (int)($post['cost'] ?? 0) ?>,
+    url: <?= json_encode('/detail/' . (int)($post['id'] ?? 0)) ?>
+};
+</script>
 
 <?php if (!empty($photos)): ?>
 <div class="modal fade" id="photoModal" tabindex="-1">
@@ -60,7 +73,7 @@ $photos = $photos ?? [];
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0 text-center">
-                <img id="lightboxImg" src="" alt="" class="img-fluid" style="max-height:70vh;object-fit:contain">
+                <img id="lightboxImg" src="" alt="" class="img-fluid" loading="lazy" decoding="async" style="max-height:70vh;object-fit:contain">
                 <div class="d-flex justify-content-between align-items-center px-3 py-2">
                     <button type="button" class="btn btn-outline-light btn-sm" id="lightboxPrev">‹ Пред</button>
                     <span class="text-white-50 small" id="lightboxCounter"></span>

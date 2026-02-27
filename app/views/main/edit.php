@@ -75,7 +75,7 @@ $photos = $photos ?? [];
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         <?php foreach ($photos as $ph): ?>
                         <div class="photo-item border rounded p-2" data-filename="<?= htmlspecialchars($ph['filename']) ?>">
-                            <img src="<?= photo_thumb_url($uid, $pid, $ph['filename'], 200, 150) ?>" alt="" style="width:80px;height:60px;object-fit:cover;display:block">
+                            <img src="<?= photo_thumb_url($uid, $pid, $ph['filename'], 200, 150) ?>" alt="" loading="lazy" decoding="async" style="width:80px;height:60px;object-fit:cover;display:block">
                             <label class="d-block mt-1 small">
                                 <input type="checkbox" class="photo-delete" value="<?= htmlspecialchars($ph['filename']) ?>"> Удалить
                             </label>
@@ -97,6 +97,7 @@ $photos = $photos ?? [];
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Сохранить</button>
+                    <button type="button" class="btn btn-outline-secondary ms-2" id="clearEditDraftBtn">Очистить черновик</button>
                     <a href="/edit-advert" class="btn btn-outline-secondary ms-2">Отмена</a>
                 </div>
             </div>

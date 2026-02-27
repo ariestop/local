@@ -10,6 +10,33 @@ $basePath = rtrim(parse_url($config['app']['url'] ?? '', PHP_URL_PATH) ?: '', '/
 
 $appEnv = $config['app']['env'] ?? $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: 'production';
 
+$security = $config['security'] ?? [];
+if (($security['headers_enabled'] ?? true) && !headers_sent()) {
+    header('X-Frame-Options: ' . ($security['x_frame_options'] ?? 'SAMEORIGIN'));
+    header('X-Content-Type-Options: ' . ($security['x_content_type_options'] ?? 'nosniff'));
+
+    $csp = trim((string) ($security['csp'] ?? ''));
+    if ($csp !== '') {
+        header('Content-Security-Policy: ' . $csp);
+    }
+
+    $isHttps = (
+        (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+        || (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443
+        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https'
+    );
+    if ($isHttps && ($security['hsts_enabled'] ?? true)) {
+        $hsts = 'max-age=' . max(0, (int) ($security['hsts_max_age'] ?? 31536000));
+        if (!empty($security['hsts_include_subdomains'])) {
+            $hsts .= '; includeSubDomains';
+        }
+        if (!empty($security['hsts_preload'])) {
+            $hsts .= '; preload';
+        }
+        header('Strict-Transport-Security: ' . $hsts);
+    }
+}
+
 // Debug Bar init (только APP_ENV=dev)
 if (function_exists('init_debugbar')) {
     $GLOBALS['_debugbar_renderer'] = init_debugbar($basePath ?: '/', $appEnv);
@@ -35,4 +62,33 @@ if ($appEnv === 'dev') {
 $router = \App\Core\Router::fromConfig($root . '/app/config/routes.php');
 $router->setContainer($container);
 $router->setBasePath($basePath);
+
+$method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+if ($method === 'GET') {
+    ob_start();
+    $router->dispatch();
+    $body = (string) ob_get_clean();
+
+    if (!headers_sent()) {
+        $etag = '"' . sha1($body) . '"';
+        header('ETag: ' . $etag);
+
+        $requestPath = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
+        if (str_contains($requestPath, '/api/')) {
+            header('Cache-Control: no-store, max-age=0');
+        } else {
+            header('Cache-Control: private, max-age=60, must-revalidate');
+        }
+
+        $ifNoneMatch = trim((string) ($_SERVER['HTTP_IF_NONE_MATCH'] ?? ''));
+        if ($ifNoneMatch !== '' && $ifNoneMatch === $etag) {
+            http_response_code(304);
+            exit;
+        }
+    }
+
+    echo $body;
+    exit;
+}
+
 $router->dispatch();

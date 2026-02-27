@@ -57,32 +57,59 @@ $migrationsDir = $root . '/migrations';
 if (!is_dir($migrationsDir)) {
     echo "- Папка migrations отсутствует, пропуск.\n";
 } else {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            id int UNSIGNED NOT NULL AUTO_INCREMENT,
+            migration varchar(190) NOT NULL,
+            applied_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uniq_migration (migration)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    echo "- Таблица schema_migrations готова\n";
+
+    $appliedRows = $pdo->query("SELECT migration FROM schema_migrations")->fetchAll(PDO::FETCH_COLUMN);
+    $applied = array_fill_keys(array_map('strval', $appliedRows), true);
+
     $files = glob($migrationsDir . '/*.{sql,php}', GLOB_BRACE);
     usort($files, 'strnatcasecmp');
     foreach ($files as $f) {
         $name = basename($f);
+        if (isset($applied[$name])) {
+            echo "- Миграция: {$name} (уже применена)\n";
+            continue;
+        }
+
         echo "- Миграция: {$name}\n";
-        if (str_ends_with($f, '.sql')) {
-            $sql = file_get_contents($f);
-            $sql = preg_replace('/--.*$/m', '', $sql);
-            $stmts = array_filter(
-                array_map('trim', preg_split('/;\s*[\r\n]+/', $sql)),
-                fn($s) => $s !== ''
-            );
-            foreach ($stmts as $stmt) {
-                try {
-                    $pdo->exec($stmt);
-                } catch (PDOException $e) {
-                    if (strpos($e->getMessage(), 'Duplicate column') !== false
-                        || strpos($e->getMessage(), 'already exists') !== false) {
-                        echo "  (пропуск: уже применено)\n";
-                    } else {
-                        throw $e;
+        try {
+            if (str_ends_with($f, '.sql')) {
+                $sql = file_get_contents($f);
+                $sql = preg_replace('/--.*$/m', '', $sql);
+                $stmts = array_filter(
+                    array_map('trim', preg_split('/;\s*[\r\n]+/', $sql)),
+                    fn($s) => $s !== ''
+                );
+                foreach ($stmts as $stmt) {
+                    try {
+                        $pdo->exec($stmt);
+                    } catch (PDOException $e) {
+                        if (strpos($e->getMessage(), 'Duplicate column') !== false
+                            || strpos($e->getMessage(), 'already exists') !== false) {
+                            echo "  (пропуск части: уже применено)\n";
+                        } else {
+                            throw $e;
+                        }
                     }
                 }
+            } else {
+                require $f;
             }
-        } else {
-            require $f;
+
+            $mark = $pdo->prepare("INSERT INTO schema_migrations (migration) VALUES (?)");
+            $mark->execute([$name]);
+        } catch (Throwable $e) {
+            echo "  Ошибка миграции {$name}: {$e->getMessage()}\n";
+            throw $e;
         }
     }
 }

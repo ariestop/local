@@ -45,7 +45,11 @@ abstract class Controller
     {
         if ($this->getLoggedUser() === null) {
             if ($this->isAjax()) {
-                $this->json(['error' => 'Требуется авторизация'], 401);
+                $this->json([
+                    'success' => false,
+                    'error' => 'Требуется авторизация',
+                    'code' => 401,
+                ], 401);
             } else {
                 $this->redirect('/');
             }
@@ -69,7 +73,11 @@ abstract class Controller
 
     protected function jsonError(string $message, int $code = 400): void
     {
-        $this->json(['success' => false, 'error' => $message], $code);
+        $this->json([
+            'success' => false,
+            'error' => $message,
+            'code' => $code,
+        ], $code);
     }
 
     protected function jsonResult(array $result, int $successCode = 200): void
@@ -77,7 +85,12 @@ abstract class Controller
         if (!empty($result['success'])) {
             $this->json($result, $successCode);
         } else {
-            $this->json(['success' => false, 'error' => $result['error'] ?? 'Ошибка'], $result['code'] ?? 400);
+            $code = (int) ($result['code'] ?? 400);
+            $this->json([
+                'success' => false,
+                'error' => $result['error'] ?? 'Ошибка',
+                'code' => $code,
+            ], $code);
         }
     }
 

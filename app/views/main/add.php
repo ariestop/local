@@ -80,6 +80,7 @@
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Добавить</button>
+                    <button type="button" class="btn btn-outline-secondary ms-2" id="clearAddDraftBtn">Очистить черновик</button>
                 </div>
             </div>
         </form>
