@@ -1,6 +1,6 @@
 # Руководство для AI-агентов
 
-> Обновлено: CSRF, валидация, пагинация, UX, .env, миграции.
+> Обновлено: PSR-4, PHP Debug Bar, APP_ENV, Vue.js frontend.
 
 Документ для быстрого понимания проекта при работе с ним в качестве ИИ-ассистента.
 
@@ -13,28 +13,32 @@
 | Компонент | Технология |
 |-----------|------------|
 | Backend | PHP 8.5+ (strict_types) |
-| Frontend | Bootstrap 5, Bootstrap Icons, Vue.js (частично) |
+| Frontend | Bootstrap 5, Bootstrap Icons, Vue.js 3 |
 | БД | MySQL 8.0, PDO |
 | Сессии | PHP Session, имя `m2saratov_sess` |
 | Хранилище фото | `public/images/{user_id}/{post_id}/` |
 
-## Структура каталогов
+## Структура каталогов (PSR-4)
 
 ```
 app/
   config/         — config.php, routes.php
   core/           — Router, Database, Controller, Container
-  models/         — Post, User, Reference, PostPhoto
-  Repositories/   — PostRepository, UserRepository, PostPhotoRepository, ReferenceRepository
-  Services/       — PostService, AuthService, ImageService
+  models/         — Post, User, Reference, PostPhoto, Favorite
+  Repositories/   — PostRepository, UserRepository, PostPhotoRepository, ReferenceRepository, FavoriteRepository
+  services/       — PostService, AuthService, ImageService, MailService
   Log/            — LoggerInterface, NullLogger (MonologAdapter при composer)
   controllers/    — MainController, UserController, ApiController
   bootstrap.php   — инициализация, контейнер
+  debugbar.php    — PHP Debug Bar (при APP_ENV=dev)
   views/          — layout.php + main/*.php
   helpers.php     — photo_thumb_url(), photo_large_url()
 public/
   index.php              — точка входа, роутинг
-  assets/app.js          — логика форм (логин, регистрация, add/edit)
+  assets/api.js          — apiPost, showToast, showError, hideError, setButtonLoading, validateCostInForm
+  assets/ux.js           — skeleton, lazy load, превью фото, syncAddFormFiles, syncEditFormFiles
+  assets/vue/*.js        — модули Vue (shared/forms/favorites/gallery)
+  assets/vue-app.js      — bootstrap Vue, объединяет модули
   images/                — загруженные фото (в .gitignore)
 ```
 
@@ -47,12 +51,18 @@ public/
 | GET | /add | MainController::add | Форма добавления |
 | POST | /add | MainController::addSubmit | Создание объявления (JSON) |
 | GET | /edit-advert | MainController::myPosts | Список объявлений пользователя |
+| GET | /favorites | MainController::favorites | Избранные объявления |
 | GET | /edit/{id} | MainController::edit | Форма редактирования |
 | POST | /edit/{id} | MainController::editSubmit | Сохранение (JSON) |
 | POST | /delete/{id} | MainController::delete | Удаление (JSON) |
 | POST | /login | UserController::login | Вход (JSON) |
 | POST | /register | UserController::register | Регистрация (JSON) |
 | GET | /logout | UserController::logout | Выход |
+| GET | /forgot-password | UserController | Форма восстановления пароля |
+| POST | /forgot-password | UserController | Отправка письма |
+| GET | /reset-password | UserController | Форма нового пароля (по токену) |
+| POST | /reset-password | UserController | Сохранение нового пароля |
+| POST | /api/favorite/toggle | ApiController | Добавить/убрать из избранного |
 | GET | /api/check-email | ApiController | Проверка email |
 | GET | /api/captcha | ApiController | Капча |
 
@@ -74,9 +84,11 @@ public/
 Файлы: `{base}_{w}x{h}.{ext}` — например `1_xxx_200x150.jpg`, `1_xxx_1200x675.jpg`.  
 Разрешения: JPEG, PNG, GIF, WebP. До 5 фото на объявление, до 5 МБ на файл.
 
-## AJAX
+## AJAX и frontend
 
-Запросы с заголовком `X-Requested-With: XMLHttpRequest` — JSON. Ответы: `{success: true/false, error?: string}`.
+- `apiPost(url, formData)` — fetch с X-Requested-With, X-CSRF-Token, парсинг JSON
+- Vue монтируется на скрытый `#vue-app`, в `mounted()` привязывает обработчики к формам/кнопкам
+- Данные из PHP: `window.areasByCity`, `window.editCityId`, `window.editAreaId` (add/edit), `window.detailPhotos` (detail)
 
 ## Аутентификация
 
@@ -88,7 +100,7 @@ public/
 
 - Все PHP-файлы: `declare(strict_types=1);`
 - PSR-4 автозагрузка, namespace `App\`
-- Без Composer-зависимостей (чистый PHP)
+- Composer опционален: без него работает fallback autoload/.env и NullLogger
 - Цена в БД — целое число; в форме — строка с пробелами (number_format)
 - `preg_replace('/\D/', '', $cost)` при сохранении цены
 
@@ -100,7 +112,8 @@ public/
 
 ## Конфиг и миграции
 
-- `.env` / `.env.local`: DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
+- `.env` / `.env.local`: APP_ENV (dev/production), DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, APP_URL
+- `APP_ENV=dev` — включает PHP Debug Bar (только для разработки!)
 - `php install.php` — создаёт БД, импортирует `public/infosee2_m2sar.sql`, выполняет все миграции из `migrations/`
 - Новые миграции: добавляйте файлы `NNN_название.sql` или `NNN_название.php` в `migrations/` — install.php применяет их автоматически
 

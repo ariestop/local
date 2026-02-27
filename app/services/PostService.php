@@ -9,6 +9,7 @@ use App\Repositories\PostPhotoRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\ReferenceRepository;
 use App\Validation;
+use PDO;
 
 class PostService
 {
@@ -17,6 +18,7 @@ class PostService
         private PostPhotoRepository $photoRepo,
         private ReferenceRepository $refRepo,
         private ImageService $imageService,
+        private PDO $db,
         private int $maxPrice = 999_000_000,
         private ?LoggerInterface $logger = null
     ) {}
@@ -39,6 +41,16 @@ class PostService
             'totalPages' => $totalPages,
             'total' => $total,
         ];
+    }
+
+    public function getPopular(int $limit = 5): array
+    {
+        return $this->postRepo->getPopular($limit);
+    }
+
+    public function getActivity(int $days = 7): array
+    {
+        return $this->postRepo->getActivity($days);
     }
 
     public function getDetail(int $id): ?array
@@ -67,6 +79,7 @@ class PostService
             'cities' => $this->refRepo->getCities(),
             'areasByCity' => $this->refRepo->getAreasByCity(),
             'max_price' => $this->maxPrice,
+            'max_photo_bytes' => ImageService::getMaxSizeBytes(),
         ];
     }
 
@@ -78,6 +91,7 @@ class PostService
             'cities' => $this->refRepo->getCities(),
             'areasByCity' => $this->refRepo->getAreasByCity(),
             'max_price' => $this->maxPrice,
+            'max_photo_bytes' => ImageService::getMaxSizeBytes(),
         ];
     }
 
@@ -93,17 +107,27 @@ class PostService
             return ['success' => false, 'error' => $costError, 'code' => 400];
         }
         $data = $this->normalizePostData($input, $userId, true);
-        $id = $this->postRepo->create($data);
-        $photos = $this->normalizeFilesArray($files['photos'] ?? $files);
-        if (!empty($photos['name'][0])) {
-            try {
+        $id = 0;
+        try {
+            $this->db->beginTransaction();
+            $id = $this->postRepo->create($data);
+            $photos = $this->normalizeFilesArray($files['photos'] ?? $files);
+            if (!empty($photos['name'][0])) {
                 $uploaded = $this->imageService->upload($userId, $id, $photos);
-                if (!empty($uploaded)) {
+                if ($uploaded !== []) {
                     $this->photoRepo->addBatch($id, $uploaded);
                 }
-            } catch (\Throwable $e) {
-                $this->logger?->warning('Photo upload failed after post create', ['post_id' => $id, 'error' => $e->getMessage()]);
             }
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            if ($id > 0) {
+                $this->imageService->deletePostFolder($userId, $id);
+            }
+            $this->logger?->warning('Post create transaction failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
+            return ['success' => false, 'error' => 'Не удалось создать объявление', 'code' => 500];
         }
         $this->logger?->info('Post created', ['post_id' => $id, 'user_id' => $userId]);
         return ['success' => true, 'id' => $id];
@@ -125,36 +149,42 @@ class PostService
             return ['success' => false, 'error' => $costError, 'code' => 400];
         }
         $data = $this->normalizePostData($input, $userId, false);
-        $this->postRepo->update($id, $userId, $data);
         $deletePhotos = is_string($input['delete_photos'] ?? '') ? explode(',', $input['delete_photos']) : ($input['delete_photos'] ?? []);
         $deletePhotos = array_map('trim', array_map('basename', (array) $deletePhotos));
-        foreach ($deletePhotos as $fn) {
-            if ($fn) {
-                $this->photoRepo->deleteByFilename($id, $fn);
-                $this->imageService->deletePhoto($userId, $id, $fn);
+        try {
+            $this->db->beginTransaction();
+            $this->postRepo->update($id, $userId, $data);
+            foreach ($deletePhotos as $fn) {
+                if ($fn) {
+                    $this->photoRepo->deleteByFilename($id, $fn);
+                    $this->imageService->deletePhoto($userId, $id, $fn);
+                }
             }
-        }
-        $photoOrder = is_string($input['photo_order'] ?? '') ? explode(',', $input['photo_order']) : [];
-        $photoOrder = array_map('trim', array_map('basename', $photoOrder));
-        $existingInOrder = array_values(array_filter($photoOrder, fn($f) => $f !== '' && $f !== '__new__'));
-        if (!empty($existingInOrder)) {
-            $this->photoRepo->updateSortOrder($id, $existingInOrder);
-        }
-        $currentCount = $this->photoRepo->countByPostId($id);
-        $remainingSlots = max(0, 5 - $currentCount);
-        $photos = $this->normalizeFilesArray($files['photos'] ?? $files);
-        if (!empty($photos['name'][0]) && $remainingSlots > 0) {
-            try {
+            $photoOrder = is_string($input['photo_order'] ?? '') ? explode(',', $input['photo_order']) : [];
+            $photoOrder = array_map('trim', array_map('basename', $photoOrder));
+            $existingInOrder = array_values(array_filter($photoOrder, fn($f) => $f !== '' && $f !== '__new__'));
+            if (!empty($existingInOrder)) {
+                $this->photoRepo->updateSortOrder($id, $existingInOrder);
+            }
+            $currentCount = $this->photoRepo->countByPostId($id);
+            $remainingSlots = max(0, 5 - $currentCount);
+            $photos = $this->normalizeFilesArray($files['photos'] ?? $files);
+            if (!empty($photos['name'][0]) && $remainingSlots > 0) {
                 $uploaded = $this->imageService->upload($userId, $id, $photos, $remainingSlots);
-                if (!empty($uploaded)) {
+                if ($uploaded !== []) {
                     $maxSort = $this->photoRepo->getMaxSortOrder($id);
                     foreach ($uploaded as $i => $p) {
                         $this->photoRepo->add($id, $p['filename'], $maxSort + 1 + $i);
                     }
                 }
-            } catch (\Throwable $e) {
-                $this->logger?->warning('Photo upload failed on edit', ['post_id' => $id]);
             }
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            $this->logger?->warning('Post update transaction failed', ['post_id' => $id, 'user_id' => $userId, 'error' => $e->getMessage()]);
+            return ['success' => false, 'error' => 'Не удалось сохранить изменения', 'code' => 500];
         }
         $this->logger?->info('Post updated', ['post_id' => $id, 'user_id' => $userId]);
         return ['success' => true, 'id' => $id];
@@ -166,9 +196,19 @@ class PostService
         if (!$post || (int) $post['user_id'] !== $userId) {
             return ['success' => false, 'error' => 'Объявление не найдено', 'code' => 404];
         }
-        $this->photoRepo->deleteByPostId($id);
+        try {
+            $this->db->beginTransaction();
+            $this->photoRepo->deleteByPostId($id);
+            $this->postRepo->delete($id, $userId);
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            $this->logger?->warning('Post delete transaction failed', ['post_id' => $id, 'user_id' => $userId, 'error' => $e->getMessage()]);
+            return ['success' => false, 'error' => 'Не удалось удалить объявление', 'code' => 500];
+        }
         $this->imageService->deletePostFolder($userId, $id);
-        $this->postRepo->delete($id, $userId);
         $this->logger?->info('Post deleted', ['post_id' => $id, 'user_id' => $userId]);
         return ['success' => true];
     }
@@ -186,6 +226,31 @@ class PostService
     public function getFirstPhotosForPosts(array $postIds): array
     {
         return empty($postIds) ? [] : $this->photoRepo->getFirstByPostIds($postIds);
+    }
+
+    public function registerView(int $postId, ?int $userId): void
+    {
+        ensure_session();
+        $key = 'post_view_last_' . $postId;
+        $now = time();
+        $cooldown = 300;
+        $last = (int) ($_SESSION[$key] ?? 0);
+        if ($last > 0 && ($now - $last) < $cooldown) {
+            return;
+        }
+
+        $_SESSION[$key] = $now;
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        $sessionHash = hash('sha256', session_id() ?: 'no-session');
+        $ipHash = hash('sha256', $ip);
+
+        try {
+            $this->postRepo->incrementViewCount($postId);
+            $this->postRepo->addViewEvent($postId, $userId, $sessionHash, $ipHash, $ua);
+        } catch (\Throwable $e) {
+            $this->logger?->warning('Post view tracking failed', ['post_id' => $postId, 'error' => $e->getMessage()]);
+        }
     }
 
     /**

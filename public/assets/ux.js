@@ -4,6 +4,44 @@
 (function() {
     'use strict';
     const MAX_PHOTOS = 5;
+    const MAX_BYTES = 5 * 1024 * 1024;
+
+    function showPhotoSizeError(msg) {
+        var existing = document.getElementById('photo-size-overlay');
+        if (existing) existing.remove();
+        var box = document.createElement('div');
+        box.id = 'photo-size-overlay';
+        box.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;max-width:90%;padding:16px 24px;background:#dc3545;color:#fff;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-size:14px;font-family:system-ui,sans-serif;';
+        box.textContent = msg;
+        document.body.appendChild(box);
+        setTimeout(function() {
+            if (box.parentNode) box.remove();
+        }, 5000);
+    }
+
+    function filterOversizeFiles(input) {
+        var maxBytes = parseInt(input && input.getAttribute && input.getAttribute('data-max-bytes') || String(MAX_BYTES), 10);
+        if (!input || !input.files || !input.files.length) return;
+        var rejected = [];
+        var dt = new DataTransfer();
+        for (var i = 0; i < input.files.length; i++) {
+            if (input.files[i].size > maxBytes) {
+                rejected.push(input.files[i].name);
+            } else {
+                dt.items.add(input.files[i]);
+            }
+        }
+        if (rejected.length) {
+            var maxMb = maxBytes / 1024 / 1024;
+            var msg = dt.files.length
+                ? 'Файл(ы) ' + rejected.slice(0, 3).join(', ') + (rejected.length > 3 ? ' и др.' : '') + ' не добавлены (превышают ' + maxMb + ' МБ). Остальные загружены.'
+                : (rejected.length === 1
+                    ? 'Файл превышает макс. размер (' + maxMb + ' МБ).'
+                    : 'Все файлы превышают макс. размер (' + maxMb + ' МБ).');
+            showPhotoSizeError(msg);
+            input.files = dt.files;
+        }
+    }
 
     // Skeleton: fade-in for table rows
     function initTableSkeleton() {
@@ -176,8 +214,8 @@
     }
 
     function syncAddFormFiles(form) {
-        const list = form.querySelector('#addPhotoPreviewList');
-        const input = form.querySelector('input[name="photos[]"]');
+        const list = form?.querySelector('#addPhotoPreviewList');
+        const input = form?.querySelector('input[name="photos[]"]');
         if (!list || !input) return;
         const dt = new DataTransfer();
         list.querySelectorAll('.photo-preview-item').forEach(el => {
@@ -187,8 +225,8 @@
     }
 
     function syncEditFormFiles(form) {
-        const list = form.querySelector('.photo-preview-list-edit');
-        const input = form.querySelector('input[name="photos[]"]');
+        const list = form?.querySelector('.photo-preview-list-edit');
+        const input = form?.querySelector('input[name="photos[]"]');
         if (!list || !input) return;
         const dt = new DataTransfer();
         list.querySelectorAll('.photo-preview-item[data-new]').forEach(el => {
@@ -197,41 +235,8 @@
         input.files = dt.files;
     }
 
-    // Override form submit to sync files in correct order
-    document.getElementById('addForm')?.addEventListener('submit', function() {
-        syncAddFormFiles(this);
-        const list = this.querySelector('#addPhotoPreviewList');
-        if (list) {
-            const order = [...list.querySelectorAll('.photo-preview-item')].map(el => el._file ? 'f' : '').filter(Boolean);
-            let hi = this.querySelector('input[name="photo_order"]');
-            if (!hi && order.length) {
-                hi = document.createElement('input');
-                hi.type = 'hidden';
-                hi.name = 'photo_order';
-                this.appendChild(hi);
-            }
-            if (hi) hi.value = order.length ? '1' : '';
-        }
-    }, true);
-
-    document.getElementById('editForm')?.addEventListener('submit', function() {
-        syncEditFormFiles(this);
-        const list = this.querySelector('.photo-preview-list-edit');
-        const delInput = this.querySelector('#deletePhotos');
-        if (list && delInput) {
-            const toDel = [];
-            list.querySelectorAll('.photo-delete:checked').forEach(cb => toDel.push(cb.value));
-            delInput.value = toDel.join(',');
-            const order = [];
-            list.querySelectorAll('.photo-preview-item').forEach(el => {
-                if (el.dataset.filename && !toDel.includes(el.dataset.filename)) order.push(el.dataset.filename);
-                if (el.dataset.new && el._file) order.push('__new__');
-            });
-            let hi = this.querySelector('input[name="photo_order"]');
-            if (!hi) { hi = document.createElement('input'); hi.type = 'hidden'; hi.name = 'photo_order'; this.appendChild(hi); }
-            hi.value = order.join(',');
-        }
-    }, true);
+    window.syncAddFormFiles = syncAddFormFiles;
+    window.syncEditFormFiles = syncEditFormFiles;
 
     // Copy phone
     function initCopyPhone() {
@@ -249,6 +254,13 @@
             });
         });
     }
+
+    document.addEventListener('change', function(e) {
+        var input = e.target;
+        if (input && input.type === 'file' && input.hasAttribute && input.hasAttribute('data-max-bytes')) {
+            filterOversizeFiles(input);
+        }
+    }, true);
 
     document.addEventListener('DOMContentLoaded', function() {
         initTableSkeleton();

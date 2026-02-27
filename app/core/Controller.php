@@ -37,9 +37,7 @@ abstract class Controller
 
     protected function getLoggedUser(): ?array
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        ensure_session();
         return $_SESSION['user'] ?? null;
     }
 
@@ -47,7 +45,11 @@ abstract class Controller
     {
         if ($this->getLoggedUser() === null) {
             if ($this->isAjax()) {
-                $this->json(['error' => 'Требуется авторизация'], 401);
+                $this->json([
+                    'success' => false,
+                    'error' => 'Требуется авторизация',
+                    'code' => 401,
+                ], 401);
             } else {
                 $this->redirect('/');
             }
@@ -61,10 +63,35 @@ abstract class Controller
             strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
 
+    protected const CSRF_ERROR_MESSAGE = 'Ошибка безопасности. Обновите страницу.';
+
     protected function validateCsrf(): bool
     {
         $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
         return $token !== '' && hash_equals(csrf_token(), $token);
+    }
+
+    protected function jsonError(string $message, int $code = 400): void
+    {
+        $this->json([
+            'success' => false,
+            'error' => $message,
+            'code' => $code,
+        ], $code);
+    }
+
+    protected function jsonResult(array $result, int $successCode = 200): void
+    {
+        if (!empty($result['success'])) {
+            $this->json($result, $successCode);
+        } else {
+            $code = (int) ($result['code'] ?? 400);
+            $this->json([
+                'success' => false,
+                'error' => $result['error'] ?? 'Ошибка',
+                'code' => $code,
+            ], $code);
+        }
     }
 
     protected function render(string $view, array $data = []): void

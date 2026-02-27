@@ -2,13 +2,23 @@
     "name": "app/realty-board",
     "description": "Доска объявлений о продаже недвижимости",
     "type": "project",
+    "license": "proprietary",
     "require": {
         "php": ">=8.1",
         "vlucas/phpdotenv": "^5.6",
         "monolog/monolog": "^3.5"
     },
+    "require-dev": {
+        "php-debugbar/php-debugbar": "^3.0"
+    },
     "autoload": {
         "psr-4": {
+            "App\\Controllers\\": "app/controllers/",
+            "App\\Core\\": "app/core/",
+            "App\\Models\\": "app/models/",
+            "App\\Services\\": "app/services/",
+            "App\\Repositories\\": "app/Repositories/",
+            "App\\Log\\": "app/Log/",
             "App\\": "app/"
         },
         "files": [

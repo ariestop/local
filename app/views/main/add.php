@@ -65,7 +65,8 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label">Фотографии (до 5 шт.)</label>
-                    <input type="file" name="photos[]" id="addPhotosInput" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                    <input type="file" name="photos[]" id="addPhotosInput" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple data-max-bytes="<?= (int)($max_photo_bytes ?? 5242880) ?>">
+                    <div class="form-text">Макс. <?= round((int)($max_photo_bytes ?? 5242880) / 1024 / 1024) ?> МБ на файл</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Телефон *</label>
@@ -79,29 +80,11 @@
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Добавить</button>
+                    <button type="button" class="btn btn-outline-secondary ms-2" id="clearAddDraftBtn">Очистить черновик</button>
                 </div>
             </div>
         </form>
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const areasByCity = <?= json_encode($areasByCity ?? []) ?>;
-    const maxPrice = parseInt(document.getElementById('costInput')?.dataset.max || '999000000', 10);
-    document.getElementById('citySelect').addEventListener('change', function() {
-        const sid = this.value;
-        const sel = document.getElementById('areaSelect');
-        sel.innerHTML = '<option value="">Выберите...</option>';
-        if (sid && areasByCity[sid]) {
-            areasByCity[sid].forEach(a => {
-                const opt = document.createElement('option');
-                opt.value = a.id;
-                opt.textContent = a.name;
-                sel.appendChild(opt);
-            });
-        }
-    });
-
-});
-</script>
+<script>window.areasByCity = <?= json_encode($areasByCity ?? []) ?>;</script>

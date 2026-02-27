@@ -15,34 +15,3 @@
         </form>
     </div>
 </div>
-
-<script>
-document.getElementById('forgotForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const err = document.getElementById('forgotError');
-    err.classList.add('d-none');
-    const fd = new FormData(this);
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
-    if (csrf) headers['X-CSRF-Token'] = csrf;
-    try {
-        const r = await fetch(window.location.pathname, { method: 'POST', body: fd, credentials: 'same-origin', headers });
-        const text = await r.text();
-        let data = {};
-        try { data = text ? JSON.parse(text) : {}; } catch {}
-        if (data.success) {
-            err.classList.remove('alert-danger');
-            err.classList.add('alert-success');
-            err.textContent = data.message || 'Проверьте почту';
-            err.classList.remove('d-none');
-            this.querySelector('button[type=submit]').disabled = true;
-        } else {
-            err.textContent = data.error || (r.ok ? 'Ошибка' : 'Сервер вернул ошибку (код ' + r.status + ')');
-            err.classList.remove('d-none');
-        }
-    } catch (e) {
-        err.textContent = 'Ошибка сети: ' + (e.message || 'не удалось подключиться');
-        err.classList.remove('d-none');
-    }
-});
-</script>

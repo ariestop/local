@@ -8,6 +8,11 @@ class ImageService
 {
     private const ALLOWED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     private const MAX_SIZE = 5 * 1024 * 1024;
+
+    public static function getMaxSizeBytes(): int
+    {
+        return self::MAX_SIZE;
+    }
     private const MAX_FILES = 5;
     private const MAX_LARGE_W = 1200;
     private const MAX_LARGE_H = 675;

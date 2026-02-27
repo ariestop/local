@@ -10,7 +10,7 @@ $photos = $photos ?? [];
     <div class="card-body">
         <h2 class="h5 mb-4">Редактировать объявление</h2>
         <div id="editError" class="alert alert-danger d-none"></div>
-        <form id="editForm" enctype="multipart/form-data" data-max-price="<?= (int)($max_price ?? 999000000) ?>"><?= csrf_field() ?>
+        <form id="editForm" enctype="multipart/form-data" data-max-price="<?= (int)($max_price ?? 999000000) ?>" data-post-id="<?= $pid ?>"><?= csrf_field() ?>
             <input type="hidden" name="delete_photos" id="deletePhotos" value="">
             <div class="row g-3">
                 <div class="col-md-6">
@@ -75,7 +75,7 @@ $photos = $photos ?? [];
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         <?php foreach ($photos as $ph): ?>
                         <div class="photo-item border rounded p-2" data-filename="<?= htmlspecialchars($ph['filename']) ?>">
-                            <img src="<?= photo_thumb_url($uid, $pid, $ph['filename'], 200, 150) ?>" alt="" style="width:80px;height:60px;object-fit:cover;display:block">
+                            <img src="<?= photo_thumb_url($uid, $pid, $ph['filename'], 200, 150) ?>" alt="" loading="lazy" decoding="async" style="width:80px;height:60px;object-fit:cover;display:block">
                             <label class="d-block mt-1 small">
                                 <input type="checkbox" class="photo-delete" value="<?= htmlspecialchars($ph['filename']) ?>"> Удалить
                             </label>
@@ -83,7 +83,8 @@ $photos = $photos ?? [];
                         <?php endforeach; ?>
                     </div>
                     <?php endif; ?>
-                    <input type="file" name="photos[]" id="photosInput" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                    <input type="file" name="photos[]" id="photosInput" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple data-max-bytes="<?= (int)($max_photo_bytes ?? 5242880) ?>">
+                    <div class="form-text">Макс. <?= round((int)($max_photo_bytes ?? 5242880) / 1024 / 1024) ?> МБ на файл</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Телефон *</label>
@@ -96,6 +97,7 @@ $photos = $photos ?? [];
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Сохранить</button>
+                    <button type="button" class="btn btn-outline-secondary ms-2" id="clearEditDraftBtn">Очистить черновик</button>
                     <a href="/edit-advert" class="btn btn-outline-secondary ms-2">Отмена</a>
                 </div>
             </div>
@@ -104,77 +106,7 @@ $photos = $photos ?? [];
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const areasByCity = <?= json_encode($areasByCity ?? []) ?>;
-    const cityId = <?= (int)($post['city_id'] ?? 0) ?>;
-    const areaId = <?= (int)($post['area_id'] ?? 0) ?>;
-
-    document.getElementById('citySelect').addEventListener('change', function() {
-        const sid = this.value;
-        const sel = document.getElementById('areaSelect');
-        sel.innerHTML = '<option value="">Выберите...</option>';
-        if (sid && areasByCity[sid]) {
-            areasByCity[sid].forEach(a => {
-                const opt = document.createElement('option');
-                opt.value = a.id;
-                opt.textContent = a.name;
-                if (sid == cityId && a.id == areaId) opt.selected = true;
-                sel.appendChild(opt);
-            });
-        }
-    });
-    if (cityId && areasByCity[cityId]) {
-        document.getElementById('citySelect').dispatchEvent(new Event('change'));
-    }
-
-    document.getElementById('editForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const form = e.target;
-        const errEl = document.getElementById('editError');
-        errEl.classList.add('d-none');
-        const maxPrice = parseInt(form.dataset.maxPrice || '999000000', 10);
-        const costEl = form.querySelector('input[name="cost"]');
-        if (costEl && maxPrice > 0) {
-            const cost = parseInt(String(costEl.value).replace(/\D/g, '') || '0', 10);
-            if (cost > maxPrice) {
-                errEl.textContent = 'Цена не должна превышать ' + maxPrice.toLocaleString('ru-RU') + ' руб.';
-                errEl.classList.remove('d-none');
-                return;
-            }
-        }
-        const btn = form.querySelector('button[type="submit"]');
-        if (window.setButtonLoading) window.setButtonLoading(btn, true);
-        const toDelete = [];
-        document.querySelectorAll('.photo-delete:checked').forEach(cb => toDelete.push(cb.value));
-        document.getElementById('deletePhotos').value = toDelete.join(',');
-
-        const fd = new FormData(form);
-        try {
-            const r = await fetch('/edit/<?= $pid ?>', {
-                method: 'POST',
-                body: fd,
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            const text = await r.text();
-            let data = {};
-            try {
-                var m = text.match(/\{[\s\S]*\}/);
-                if (m) data = JSON.parse(m[0]);
-            } catch (x) {}
-            if (data.success) {
-                if (window.showToast) window.showToast('Изменения сохранены');
-                window.location.href = '/detail/' + data.id;
-            } else {
-                errEl.textContent = data.error || 'Ошибка';
-                errEl.classList.remove('d-none');
-            }
-        } catch (err) {
-            errEl.textContent = 'Ошибка сети: ' + (err.message || '');
-            errEl.classList.remove('d-none');
-        } finally {
-            if (window.setButtonLoading) window.setButtonLoading(btn, false);
-        }
-    });
-});
+window.areasByCity = <?= json_encode($areasByCity ?? []) ?>;
+window.editCityId = <?= (int)($post['city_id'] ?? 0) ?>;
+window.editAreaId = <?= (int)($post['area_id'] ?? 0) ?>;
 </script>

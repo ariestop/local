@@ -57,4 +57,24 @@ class PostRepository
     {
         return $this->model->delete($id, $userId);
     }
+
+    public function incrementViewCount(int $postId): void
+    {
+        $this->model->incrementViewCount($postId);
+    }
+
+    public function addViewEvent(int $postId, ?int $userId, string $sessionHash, string $ipHash, string $userAgent): void
+    {
+        $this->model->addViewEvent($postId, $userId, $sessionHash, $ipHash, $userAgent);
+    }
+
+    public function getPopular(int $limit = 5): array
+    {
+        return $this->model->getPopular($limit);
+    }
+
+    public function getActivity(int $days = 7): array
+    {
+        return $this->model->getActivity($days);
+    }
 }

@@ -18,6 +18,23 @@ $photos = $photos ?? [];
     </div>
     <div class="d-flex gap-1 overflow-auto justify-content-center mt-2 py-2" id="detailThumbs"></div>
 </div>
+<?php else: ?>
+<div class="mb-4 position-relative detail-photo-wrap">
+    <div class="text-center bg-light rounded overflow-hidden p-2">
+        <svg viewBox="0 0 1200 675" role="img" aria-label="Заглушка: фото отсутствуют" style="width:100%;max-height:250px;display:block">
+            <rect width="1200" height="675" rx="24" fill="#F3F4F6"></rect>
+            <rect x="286" y="160" width="628" height="355" rx="16" fill="#E5E7EB"></rect>
+            <rect x="340" y="228" width="190" height="220" rx="10" fill="#D1D5DB"></rect>
+            <rect x="560" y="228" width="95" height="95" rx="10" fill="#D1D5DB"></rect>
+            <rect x="675" y="228" width="95" height="95" rx="10" fill="#D1D5DB"></rect>
+            <rect x="790" y="228" width="70" height="220" rx="10" fill="#D1D5DB"></rect>
+            <path d="M252 268L600 92L948 268" stroke="#9CA3AF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"></path>
+            <circle cx="600" cy="370" r="56" fill="#9CA3AF"></circle>
+            <path d="M600 345L610 365H634L614 378L622 401L600 388L578 401L586 378L566 365H590L600 345Z" fill="#F9FAFB"></path>
+            <text x="600" y="590" text-anchor="middle" fill="#6B7280" font-family="Segoe UI, Arial, sans-serif" font-size="38" font-weight="600">Нет фото объявления</text>
+        </svg>
+    </div>
+</div>
 <?php endif; ?>
 <div class="card border-0 shadow-sm">
     <div class="card-body">
@@ -39,6 +56,8 @@ $photos = $photos ?? [];
             <dd class="col-sm-9"><?= (int)$post['m2'] ?> м²</dd>
             <dt class="col-sm-3">Цена</dt>
             <dd class="col-sm-9 fw-bold"><?= number_format((int)$post['cost'], 0, '', ' ') ?> руб.</dd>
+            <dt class="col-sm-3">Просмотров</dt>
+            <dd class="col-sm-9"><?= number_format((int)($post['view_count'] ?? 0), 0, '', ' ') ?></dd>
             <dt class="col-sm-3">Телефон</dt>
             <dd class="col-sm-9 d-flex align-items-center gap-2 flex-wrap">
                 <span><?= htmlspecialchars($post['phone']) ?></span>
@@ -51,6 +70,17 @@ $photos = $photos ?? [];
         </dl>
     </div>
 </div>
+<script>
+window.currentDetailPost = {
+    id: <?= (int)($post['id'] ?? 0) ?>,
+    title: <?= json_encode(trim(($post['action_name'] ?? '') . ' ' . ($post['object_name'] ?? ''))) ?>,
+    address: <?= json_encode(trim(($post['city_name'] ?? '') . ', ' . ($post['area_name'] ?? '') . ' р-н., ' . ($post['street'] ?? ''))) ?>,
+    room: <?= (int)($post['room'] ?? 0) ?>,
+    m2: <?= (int)($post['m2'] ?? 0) ?>,
+    cost: <?= (int)($post['cost'] ?? 0) ?>,
+    url: <?= json_encode('/detail/' . (int)($post['id'] ?? 0)) ?>
+};
+</script>
 
 <?php if (!empty($photos)): ?>
 <div class="modal fade" id="photoModal" tabindex="-1">
@@ -60,7 +90,7 @@ $photos = $photos ?? [];
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0 text-center">
-                <img id="lightboxImg" src="" alt="" class="img-fluid" style="max-height:70vh;object-fit:contain">
+                <img id="lightboxImg" src="" alt="" class="img-fluid" loading="lazy" decoding="async" style="max-height:70vh;object-fit:contain">
                 <div class="d-flex justify-content-between align-items-center px-3 py-2">
                     <button type="button" class="btn btn-outline-light btn-sm" id="lightboxPrev">‹ Пред</button>
                     <span class="text-white-50 small" id="lightboxCounter"></span>
@@ -71,97 +101,10 @@ $photos = $photos ?? [];
         </div>
     </div>
 </div>
-<script>
-(function(){
-    var photos = <?= json_encode(array_map(fn($ph) => [
+<script>window.detailPhotos = <?= json_encode(array_map(fn($ph) => [
         'thumb' => photo_thumb_url($uid, $pid, $ph['filename'], 400, 300),
         'large' => photo_large_url($uid, $pid, $ph['filename']),
         'thumbSmall' => photo_thumb_url($uid, $pid, $ph['filename'], 200, 150)
-    ], $photos)) ?>;
-    var idx = 0;
-    var modal = document.getElementById('photoModal');
-    var detailImg = document.getElementById('detailPhoto');
-    var lightboxImg = document.getElementById('lightboxImg');
-    var thumbs = document.getElementById('lightboxThumbs');
-    var counter = document.getElementById('lightboxCounter');
-    var detailCounter = document.getElementById('detailCounter');
-    var detailPrev = document.getElementById('detailPrev');
-    var detailNext = document.getElementById('detailNext');
-    var detailThumbs = document.getElementById('detailThumbs');
-    var prev = document.getElementById('lightboxPrev');
-    var next = document.getElementById('lightboxNext');
-    function renderDetailThumbs() {
-        if (!detailThumbs) return;
-        detailThumbs.innerHTML = '';
-        photos.forEach(function(p, i) {
-            var a = document.createElement('a');
-            a.href = '#';
-            a.className = 'detail-thumb' + (i === idx ? ' border border-2 border-primary' : ' opacity-75');
-            a.style.cssText = 'width:60px;height:45px;display:block;overflow:hidden;border-radius:4px;flex-shrink:0';
-            a.innerHTML = '<img src="' + p.thumbSmall + '" style="width:100%;height:100%;object-fit:cover">';
-            a.onclick = function(e) { e.preventDefault(); idx = i; updateDetail(); };
-            detailThumbs.appendChild(a);
-        });
-    }
-    function updateDetail() {
-        if (detailImg) detailImg.src = photos[idx].thumb;
-        if (detailCounter) detailCounter.textContent = (idx + 1) + ' / ' + photos.length;
-        renderDetailThumbs();
-    }
-    (function init() { renderDetailThumbs(); })();
-    function showLightbox() {
-        lightboxImg.src = photos[idx].large;
-        counter.textContent = (idx + 1) + ' / ' + photos.length;
-        thumbs.innerHTML = '';
-        photos.forEach(function(p, i) {
-            var a = document.createElement('a');
-            a.href = '#';
-            a.className = 'lightbox-thumb' + (i === idx ? ' border border-2 border-white' : ' opacity-60');
-            a.style.cssText = 'width:60px;height:45px;display:block;overflow:hidden;border-radius:4px;flex-shrink:0';
-            a.innerHTML = '<img src="' + p.thumbSmall + '" style="width:100%;height:100%;object-fit:cover">';
-            a.onclick = function(e) { e.preventDefault(); idx = i; showLightbox(); };
-            thumbs.appendChild(a);
-        });
-    }
-    function prevImg() { idx = (idx - 1 + photos.length) % photos.length; }
-    function nextImg() { idx = (idx + 1) % photos.length; }
-    if (detailImg) detailImg.onclick = function() { bootstrap.Modal.getOrCreateInstance(modal).show(); showLightbox(); };
-    if (detailPrev) detailPrev.onclick = function() { prevImg(); updateDetail(); };
-    if (detailNext) detailNext.onclick = function() { nextImg(); updateDetail(); };
-    prev.onclick = function() { prevImg(); showLightbox(); };
-    next.onclick = function() { nextImg(); showLightbox(); };
-    modal.addEventListener('show.bs.modal', function() { showLightbox(); });
-    modal.addEventListener('hidden.bs.modal', function() { updateDetail(); });
-    document.addEventListener('keydown', function(e) {
-        if (modal.classList.contains('show')) {
-            if (e.key === 'ArrowLeft') { prevImg(); showLightbox(); }
-            else if (e.key === 'ArrowRight') { nextImg(); showLightbox(); }
-        }
-    });
-})();
-</script>
+    ], $photos)) ?>;</script>
 <?php endif; ?>
 
-<?php if ($user): ?>
-<script>
-document.querySelector('.btn-favorite-detail')?.addEventListener('click', async function() {
-    const btn = this;
-    const id = btn.dataset.id;
-    const fd = new FormData();
-    fd.append('post_id', id);
-    fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
-    try {
-        const r = await fetch('/api/favorite/toggle', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        const data = await r.json();
-        if (data.success) {
-            btn.classList.toggle('btn-danger', data.added);
-            btn.classList.toggle('btn-outline-secondary', !data.added);
-            btn.querySelector('i').classList.toggle('bi-heart-fill', data.added);
-            btn.querySelector('i').classList.toggle('bi-heart', !data.added);
-            btn.innerHTML = (data.added ? '<i class="bi bi-heart-fill"></i> В избранном' : '<i class="bi bi-heart"></i> В избранное');
-            if (window.showToast) window.showToast(data.added ? 'Добавлено в избранное' : 'Убрано из избранного');
-        }
-    } catch (e) {}
-});
-</script>
-<?php endif; ?>

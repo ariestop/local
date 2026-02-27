@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Container;
 use App\Core\Controller;
 use App\Services\AuthService;
+use App\Services\RateLimiter;
 
 class UserController extends Controller
 {
@@ -14,14 +15,26 @@ class UserController extends Controller
     {
         parent::__construct($container);
         $this->authService = $container->get(AuthService::class);
+        $this->rateLimiter = $container->get(RateLimiter::class);
     }
 
     private AuthService $authService;
+    private RateLimiter $rateLimiter;
 
     public function login(): void
     {
         if (!$this->validateCsrf()) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
+            return;
+        }
+        $rate = $this->rateLimiter->hit($this->rateKey('login'), 10, 600);
+        if (!$rate['allowed']) {
+            $this->json([
+                'success' => false,
+                'error' => 'Слишком много попыток входа. Повторите позже.',
+                'code' => 429,
+                'retry_after' => $rate['retry_after'],
+            ], 429);
             return;
         }
         if ($this->getLoggedUser()) {
@@ -30,12 +43,10 @@ class UserController extends Controller
         }
         $result = $this->authService->login($_POST);
         if (!$result['success']) {
-            $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 400);
+            $this->jsonError($result['error'] ?? 'Ошибка', (int) ($result['code'] ?? 400));
             return;
         }
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        ensure_session();
         $_SESSION['user'] = $result['user'];
         $this->json(['success' => true, 'user' => $result['user']]);
     }
@@ -43,7 +54,17 @@ class UserController extends Controller
     public function register(): void
     {
         if (!$this->validateCsrf()) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
+            return;
+        }
+        $rate = $this->rateLimiter->hit($this->rateKey('register'), 5, 900);
+        if (!$rate['allowed']) {
+            $this->json([
+                'success' => false,
+                'error' => 'Слишком много попыток регистрации. Повторите позже.',
+                'code' => 429,
+                'retry_after' => $rate['retry_after'],
+            ], 429);
             return;
         }
         $expected = $_SESSION['captcha'] ?? '';
@@ -52,7 +73,7 @@ class UserController extends Controller
             if (isset($_SESSION['captcha'])) {
                 unset($_SESSION['captcha']);
             }
-            $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 400);
+            $this->jsonError($result['error'] ?? 'Ошибка', (int) ($result['code'] ?? 400));
             return;
         }
         unset($_SESSION['captcha']);
@@ -79,9 +100,7 @@ class UserController extends Controller
             $this->render('main/verify-email', ['success' => false, 'error' => $result['error']]);
             return;
         }
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        ensure_session();
         $_SESSION['user'] = $result['user'];
         $this->render('main/verify-email', ['success' => true]);
     }
@@ -94,19 +113,29 @@ class UserController extends Controller
     public function forgotPasswordSubmit(): void
     {
         if (!$this->validateCsrf()) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности'], 403);
+            $this->jsonError('Ошибка безопасности', 403);
+            return;
+        }
+        $rate = $this->rateLimiter->hit($this->rateKey('forgot-password'), 5, 900);
+        if (!$rate['allowed']) {
+            $this->json([
+                'success' => false,
+                'error' => 'Слишком много запросов на восстановление. Повторите позже.',
+                'code' => 429,
+                'retry_after' => $rate['retry_after'],
+            ], 429);
             return;
         }
         $email = trim($_POST['email'] ?? '');
         if (!$email) {
-            $this->json(['success' => false, 'error' => 'Введите email'], 400);
+            $this->jsonError('Введите email', 400);
             return;
         }
         try {
             $result = $this->authService->requestPasswordReset($email);
             $this->json($result);
         } catch (\Throwable $e) {
-            $this->json(['success' => false, 'error' => 'Временная ошибка сервера. Попробуйте позже.'], 500);
+            $this->jsonError('Временная ошибка сервера. Попробуйте позже.', 500);
         }
     }
 
@@ -123,34 +152,36 @@ class UserController extends Controller
     public function resetPasswordSubmit(): void
     {
         if (!$this->validateCsrf()) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности'], 403);
+            $this->jsonError('Ошибка безопасности', 403);
             return;
         }
         $token = trim($_POST['token'] ?? '');
         $password = $_POST['password'] ?? '';
         $password2 = $_POST['password2'] ?? '';
         if ($password !== $password2) {
-            $this->json(['success' => false, 'error' => 'Пароли не совпадают'], 400);
+            $this->jsonError('Пароли не совпадают', 400);
             return;
         }
         $result = $this->authService->resetPassword($token, $password);
         if (!$result['success']) {
-            $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 400);
+            $this->jsonError($result['error'] ?? 'Ошибка', (int) ($result['code'] ?? 400));
             return;
         }
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        ensure_session();
         $_SESSION['user'] = $result['user'];
         $this->json(['success' => true, 'message' => 'Пароль изменён']);
     }
 
     public function logout(): void
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        ensure_session();
         unset($_SESSION['user']);
         $this->redirect('/');
+    }
+
+    private function rateKey(string $scope): string
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        return 'user:' . $scope . ':' . $ip;
     }
 }

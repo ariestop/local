@@ -1,5 +1,39 @@
 # История изменений
 
+## Рефакторинг roadmap (2026-02)
+
+- **PSR-4/Autoload** — `composer.json` дополнен явными маппингами для `controllers/core/models/services/Repositories/Log` (устойчиво для текущей структуры каталогов).
+- **JSON-контракты API** — унифицированы backend-ошибки в `Controller::jsonError/jsonResult`, `requireAuth()` для AJAX всегда возвращает `{success:false,error,code}`.
+- **API check-email** — endpoint возвращает расширенный контракт `{success:true, exists:boolean}` без изменения клиентского поведения.
+- **Vue decomposition** — `public/assets/vue-app.js` разбит на модули:
+  - `public/assets/vue/shared.js`
+  - `public/assets/vue/forms.js`
+  - `public/assets/vue/favorites.js`
+  - `public/assets/vue/gallery.js`
+  - `public/assets/vue-app.js` оставлен как bootstrap-компоновщик.
+- **Legacy cleanup** — удалён неиспользуемый `public/assets/app.js`.
+
+## PHP Debug Bar и PSR-4 (2025)
+
+### PHP Debug Bar
+- `composer require --dev php-debugbar/php-debugbar`
+- Включение при `APP_ENV=dev` в .env; `config.php` — `app.env`, fallback через `getenv()`
+- `app/debugbar.php` — инициализация, `layout.php` — `renderHead()` и `render()`
+- Раздача ассетов через `index.php` (GET /debugbar/*), путь `vendor/.../resources`
+
+### PSR-4
+- Папки приведены в соответствие: `Controllers/`, `Core/`, `Models/`, `Services/`
+- `Repositories/` и `Log/` уже соответствовали
+
+## Фронтенд: Vue.js и централизация JS (2025)
+
+- **Vue.js 3** — все формы и кнопки управляются через vue-app.js
+- **api.js** — общие хелперы: apiPost, showToast, showError, hideError, setButtonLoading, validateCostInForm
+- **ux.js** — skeleton, lazy load, превью фото, drag & drop; экспорт syncAddFormFiles, syncEditFormFiles
+- **vue-app.js** — bindLogin, bindRegister, bindAddForm, bindEditForm, bindForgotForm, bindResetForm, bindFavoriteButtons, bindRemoveFavorite, bindDeleteButtons, bindRegEmailCheck, bindCityArea, bindPagination, bindDetailGallery
+- **app.js** — удалён из layout (дублирующийся код перенесён в api.js + vue-app.js)
+- Inline-скрипты удалены из index, detail, favorites, edit-advert, add, edit, forgot-password, reset-password
+
 ## Архитектура и качество кода
 
 - **Composer** — composer.json с vlucas/phpdotenv, monolog; PSR-4 autoload

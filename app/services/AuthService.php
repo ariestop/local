@@ -10,12 +10,16 @@ use App\Validation;
 
 class AuthService
 {
+    private bool $allowLegacyPasswordLogin;
+
     public function __construct(
         private UserRepository $userRepo,
         private MailService $mailService,
         private array $config,
         private ?LoggerInterface $logger = null
-    ) {}
+    ) {
+        $this->allowLegacyPasswordLogin = (bool) ($this->config['app']['allow_legacy_password_login'] ?? true);
+    }
 
     public function login(array $input): array
     {
@@ -26,7 +30,7 @@ class AuthService
         }
         $email = trim($input['email']);
         $password = $input['password'] ?? '';
-        $user = $this->userRepo->verifyCredentials($email, $password);
+        $user = $this->userRepo->verifyCredentials($email, $password, $this->allowLegacyPasswordLogin);
         if (!$user) {
             $u = $this->userRepo->findByEmail($email);
             if ($u && isset($u['email_verified']) && !$u['email_verified']) {
@@ -68,7 +72,7 @@ class AuthService
         if ($confirmRequired && $confirmToken) {
             $this->mailService->sendConfirmEmail($email, $name, $confirmToken);
         }
-        $user = ['id' => $userId, 'email' => $email, 'name' => $name];
+        $user = ['id' => $userId, 'email' => $email, 'name' => $name, 'is_admin' => 0];
         $this->logger?->info('User registered', ['email' => $email, 'id' => $userId]);
         return [
             'success' => true,
@@ -85,7 +89,12 @@ class AuthService
         }
         $this->userRepo->verifyEmail((int) $user['id']);
         $this->logger?->info('Email verified', ['user_id' => $user['id']]);
-        return ['success' => true, 'user' => ['id' => (int) $user['id'], 'email' => $user['email'], 'name' => $user['name']]];
+        return ['success' => true, 'user' => [
+            'id' => (int) $user['id'],
+            'email' => $user['email'],
+            'name' => $user['name'],
+            'is_admin' => (int) ($user['is_admin'] ?? 0),
+        ]];
     }
 
     public function requestPasswordReset(string $email): array
@@ -112,6 +121,11 @@ class AuthService
             return ['success' => false, 'error' => 'Ссылка недействительна или истекла', 'code' => 400];
         }
         $this->userRepo->updatePassword((int) $user['id'], $password);
-        return ['success' => true, 'user' => ['id' => (int) $user['id'], 'email' => $user['email'], 'name' => $user['name']]];
+        return ['success' => true, 'user' => [
+            'id' => (int) $user['id'],
+            'email' => $user['email'],
+            'name' => $user['name'],
+            'is_admin' => (int) ($user['is_admin'] ?? 0),
+        ]];
     }
 }

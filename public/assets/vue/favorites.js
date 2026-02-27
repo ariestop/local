@@ -1,0 +1,85 @@
+/**
+ * Vue methods responsible for favorites and deletion actions.
+ */
+(function () {
+    'use strict';
+
+    window.VueAppModules = window.VueAppModules || {};
+    window.VueAppModules.favorites = {
+        bindFavoriteButtons() {
+            document.querySelectorAll('.btn-favorite, .btn-favorite-detail').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.dataset.id;
+                    const fd = new FormData();
+                    fd.append('post_id', id);
+                    fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
+                    try {
+                        const data = await this.apiPost('/api/favorite/toggle', fd);
+                        if (data.success) {
+                            btn.classList.toggle('btn-danger', data.added);
+                            btn.classList.toggle('btn-outline-secondary', !data.added);
+                            const icon = btn.querySelector('i');
+                            if (icon) {
+                                icon.classList.toggle('bi-heart-fill', data.added);
+                                icon.classList.toggle('bi-heart', !data.added);
+                            }
+                            btn.title = data.added ? 'Убрать из избранного' : 'В избранное';
+                            if (btn.classList.contains('btn-favorite-detail')) {
+                                btn.innerHTML = data.added
+                                    ? '<i class="bi bi-heart-fill"></i> В избранном'
+                                    : '<i class="bi bi-heart"></i> В избранное';
+                            }
+                            window.showToast?.(data.added ? 'Добавлено в избранное' : 'Убрано из избранного');
+                        } else if (data.code === 401) {
+                            window.showToast?.('Требуется авторизация', 'warning');
+                        } else {
+                            window.showToast?.(data.error || 'Не удалось изменить избранное', 'warning');
+                        }
+                    } catch (err) {
+                        window.showToast?.('Сетевая ошибка при работе с избранным', 'warning');
+                    }
+                });
+            });
+        },
+
+        bindRemoveFavorite() {
+            document.querySelectorAll('.btn-remove-favorite').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.dataset.id;
+                    const fd = new FormData();
+                    fd.append('post_id', id);
+                    fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
+                    try {
+                        const data = await this.apiPost('/api/favorite/toggle', fd);
+                        if (data.success && !data.added) {
+                            btn.closest('tr')?.remove();
+                            window.showToast?.('Убрано из избранного');
+                        } else if (!data.success) {
+                            window.showToast?.(data.error || 'Не удалось убрать из избранного', 'warning');
+                        }
+                    } catch (err) {
+                        window.showToast?.('Сетевая ошибка при работе с избранным', 'warning');
+                    }
+                });
+            });
+        },
+
+        bindDeleteButtons() {
+            document.querySelectorAll('.btn-delete-post').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm('Удалить это объявление? Фотографии и папка будут удалены.')) return;
+                    const id = btn.dataset.id;
+                    const fd = new FormData();
+                    fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
+                    try {
+                        const data = await this.apiPost('/delete/' + id, fd);
+                        if (data.success) location.reload();
+                        else window.showToast?.(data.error || 'Ошибка удаления', 'warning');
+                    } catch (err) {
+                        window.showToast?.('Ошибка сети при удалении', 'warning');
+                    }
+                });
+            });
+        },
+    };
+})();

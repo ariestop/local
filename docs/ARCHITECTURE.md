@@ -21,17 +21,16 @@
 - **Controller** — HTTP-слой, валидация CSRF, вызов сервисов
 - **Service** — бизнес-логика (PostService, AuthService)
 - **Repository** — доступ к данным, фасад над Model
-- **Model** — работа с БД (Post, User, PostPhoto, Reference)
+- **Model** — работа с БД (Post, User, PostPhoto, Reference, Favorite)
 
 ## Компоненты
 
 ### Точка входа
 
 `public/index.php`:
-- Подключает autoload, helpers
-- Запускает сессию
-- Регистрирует маршруты
-- Вызывает `Router::dispatch()`
+- Загружает bootstrap (autoload, .env, контейнер)
+- При `APP_ENV=dev` — инициализирует Debug Bar, раздаёт ассеты GET /debugbar/*
+- Регистрирует маршруты и вызывает `Router::dispatch()`
 
 ### Роутинг
 
@@ -102,8 +101,35 @@
 
 ## Фронтенд
 
-- Формы логина/регистрации: `app.js` → fetch с FormData
-- Добавление объявления: `addForm` → fetch /add
-- Редактирование: `editForm` → fetch /edit/{id}
-- Удаление: кнопка → confirm → fetch /delete/{id}
-- Районы по городу: JS в add.php, edit.php — areasByCity из PHP
+**Vue.js 3** + Bootstrap 5. Один корень Vue монтируется на `#vue-app`, в `mounted()` привязываются обработчики к формам и кнопкам.
+
+### Подключаемые скрипты (layout.php)
+
+| Файл | Назначение |
+|------|------------|
+| api.js | `apiPost()`, `showToast()`, `showError()`, `hideError()`, `setButtonLoading()`, `validateCostInForm()` |
+| ux.js | Skeleton, lazy load, превью фото (add/edit), drag & drop, `syncAddFormFiles`, `syncEditFormFiles` |
+| vue/shared.js | Общие Vue-методы (`apiPost`, city/area, пагинация, проверка email, login hint) |
+| vue/forms.js | Формы auth/add/edit/forgot/reset |
+| vue/favorites.js | Избранное и удаление объявлений |
+| vue/gallery.js | Галерея detail + лайтбокс |
+| vue-app.js | Тонкий bootstrap: объединяет методы модулей, определяет `data-page` и активирует только нужные bind-методы |
+
+### Формы
+
+- **loginForm, registerForm** — модалки в layout, submit через `apiPost`
+- **addForm** — валидация цены, sync фото, `apiPost('/add')`
+- **editForm** — sync фото, `delete_photos`, `photo_order`, `apiPost('/edit/{id}')`
+- **forgotForm, resetForm** — восстановление пароля
+- **Районы по городу** — `window.areasByCity`, `window.editCityId`, `window.editAreaId` (add.php, edit.php)
+
+### Кнопки
+
+- `.btn-favorite`, `.btn-favorite-detail` — toggle избранного (`/api/favorite/toggle`)
+- `.btn-remove-favorite` — убрать из избранного (на странице /favorites)
+- `.btn-delete-post` — удаление объявления (`/delete/{id}`)
+
+### Дополнительно
+
+- Пагинация — `pageInput`, `pageGoBtn`
+- Галерея на detail — `window.detailPhotos`, лайтбокс

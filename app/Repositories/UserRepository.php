@@ -57,8 +57,8 @@ class UserRepository
         $this->model->updatePassword($userId, $password);
     }
 
-    public function verifyCredentials(string $email, string $password): ?array
+    public function verifyCredentials(string $email, string $password, bool $allowLegacy = true): ?array
     {
-        return $this->model->login($email, $password);
+        return $this->model->login($email, $password, $allowLegacy);
     }
 }

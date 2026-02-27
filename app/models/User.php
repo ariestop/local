@@ -27,20 +27,35 @@ class User
 
     public function findById(int $id): ?array
     {
-        $stmt = $this->db->prepare("SELECT id, email, name FROM user WHERE id = ?");
+        $stmt = $this->db->prepare("SELECT id, email, name, COALESCE(is_admin, 0) AS is_admin FROM user WHERE id = ?");
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }
 
-    public function login(string $email, string $password): ?array
+    public function login(string $email, string $password, bool $allowLegacy = true): ?array
     {
         $user = $this->findByEmail($email);
         if (!$user) {
             return null;
         }
-        $stored = $user['password'];
-        $ok = ($password === $stored) || (md5($password) === $stored) || password_verify($password, $stored);
+
+        $stored = (string) ($user['password'] ?? '');
+        $ok = false;
+        $isModernHash = password_get_info($stored)['algo'] !== null;
+
+        if ($isModernHash) {
+            $ok = password_verify($password, $stored);
+            if ($ok && password_needs_rehash($stored, PASSWORD_DEFAULT)) {
+                $this->updatePasswordHash((int) $user['id'], $password);
+            }
+        } elseif ($allowLegacy) {
+            $ok = hash_equals($stored, $password) || hash_equals($stored, md5($password));
+            if ($ok) {
+                $this->updatePasswordHash((int) $user['id'], $password);
+            }
+        }
+
         if (!$ok) {
             return null;
         }
@@ -51,6 +66,7 @@ class User
             'id' => (int) $user['id'],
             'email' => $user['email'],
             'name' => $user['name'],
+            'is_admin' => (int) ($user['is_admin'] ?? 0),
         ];
     }
 
@@ -105,6 +121,13 @@ class User
     {
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $this->db->prepare("UPDATE user SET password = ?, password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?");
+        $stmt->execute([$hash, $userId]);
+    }
+
+    private function updatePasswordHash(int $userId, string $password): void
+    {
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+        $stmt = $this->db->prepare("UPDATE user SET password = ? WHERE id = ?");
         $stmt->execute([$hash, $userId]);
     }
 }

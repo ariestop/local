@@ -62,7 +62,7 @@ class Post
             'date_asc' => 'p.created_at ASC',
             default => 'p.created_at DESC',
         };
-        $sql = "SELECT p.id, p.user_id, p.action_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house,
+        $sql = "SELECT p.id, p.user_id, p.action_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house, p.view_count,
                 a.name AS action_name, o.name AS object_name, c.name AS city_name, ar.name AS area_name
                 FROM post p
                 JOIN action a ON p.action_id = a.id
@@ -100,7 +100,7 @@ class Post
         if (empty($ids)) return [];
         $ids = array_map('intval', $ids);
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $sql = "SELECT p.id, p.user_id, p.action_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house,
+        $sql = "SELECT p.id, p.user_id, p.action_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house, p.view_count,
                 a.name AS action_name, o.name AS object_name, c.name AS city_name, ar.name AS area_name
                 FROM post p
                 JOIN action a ON p.action_id = a.id
@@ -116,7 +116,7 @@ class Post
 
     public function getByUserId(int $userId): array
     {
-        $sql = "SELECT p.id, p.user_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house,
+        $sql = "SELECT p.id, p.user_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house, p.view_count,
                 a.name AS action_name, o.name AS object_name, c.name AS city_name, ar.name AS area_name
                 FROM post p
                 JOIN action a ON p.action_id = a.id
@@ -180,5 +180,76 @@ class Post
     {
         $stmt = $this->db->prepare("DELETE FROM post WHERE id = ? AND user_id = ?");
         return $stmt->execute([$id, $userId]);
+    }
+
+    public function incrementViewCount(int $postId): void
+    {
+        $stmt = $this->db->prepare("UPDATE post SET view_count = view_count + 1 WHERE id = ?");
+        $stmt->execute([$postId]);
+    }
+
+    public function addViewEvent(int $postId, ?int $userId, string $sessionHash, string $ipHash, string $userAgent): void
+    {
+        $stmt = $this->db->prepare("INSERT INTO post_view_event (post_id, user_id, session_hash, ip_hash, user_agent) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$postId, $userId, $sessionHash, $ipHash, substr($userAgent, 0, 255)]);
+    }
+
+    public function getPopular(int $limit = 5): array
+    {
+        $limit = max(1, min(20, $limit));
+        $sql = "SELECT p.id, p.view_count, p.cost, p.room, p.m2, p.street, p.created_at,
+                a.name AS action_name, o.name AS object_name, c.name AS city_name, ar.name AS area_name
+                FROM post p
+                JOIN action a ON p.action_id = a.id
+                JOIN objectsale o ON p.object_id = o.id
+                JOIN city c ON p.city_id = c.id
+                JOIN area ar ON p.area_id = ar.id
+                ORDER BY p.view_count DESC, p.created_at DESC
+                LIMIT ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getActivity(int $days = 7): array
+    {
+        $days = max(1, min(30, $days));
+        $from = (new \DateTimeImmutable('today'))->modify('-' . ($days - 1) . ' days')->format('Y-m-d 00:00:00');
+
+        $viewStmt = $this->db->prepare("
+            SELECT DATE(viewed_at) AS d, COUNT(*) AS c
+            FROM post_view_event
+            WHERE viewed_at >= ?
+            GROUP BY DATE(viewed_at)
+        ");
+        $viewStmt->execute([$from]);
+        $viewsByDay = [];
+        foreach ($viewStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $viewsByDay[(string) $row['d']] = (int) $row['c'];
+        }
+
+        $postStmt = $this->db->prepare("
+            SELECT DATE(created_at) AS d, COUNT(*) AS c
+            FROM post
+            WHERE created_at >= ?
+            GROUP BY DATE(created_at)
+        ");
+        $postStmt->execute([$from]);
+        $postsByDay = [];
+        foreach ($postStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $postsByDay[(string) $row['d']] = (int) $row['c'];
+        }
+
+        $result = [];
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $day = (new \DateTimeImmutable('today'))->modify('-' . $i . ' days')->format('Y-m-d');
+            $result[] = [
+                'date' => $day,
+                'views' => $viewsByDay[$day] ?? 0,
+                'new_posts' => $postsByDay[$day] ?? 0,
+            ];
+        }
+        return $result;
     }
 }

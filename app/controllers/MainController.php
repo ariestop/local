@@ -35,8 +35,12 @@ class MainController extends Controller
         $sort = in_array($_GET['sort'] ?? '', ['date_desc', 'date_asc', 'price_asc', 'price_desc'])
             ? $_GET['sort'] : 'date_desc';
         $result = $this->postService->getPaginatedList($perPage, $page, $filters, $sort);
+        $popularPosts = $this->postService->getPopular(5);
+        $activity = $this->postService->getActivity(7);
         $user = $this->getLoggedUser();
         $favoriteIds = $user ? $this->favoriteRepo->getPostIdsByUserId((int) $user['id']) : [];
+        $postIds = array_map(static fn(array $p): int => (int) ($p['id'] ?? 0), $result['posts']);
+        $firstPhotos = $this->postService->getFirstPhotosForPosts(array_values(array_filter($postIds)));
         $this->render('main/index', [
             'posts' => $result['posts'],
             'user' => $user,
@@ -48,6 +52,9 @@ class MainController extends Controller
             'actions' => $this->postService->getFormData()['actions'] ?? [],
             'cities' => $this->postService->getFormData()['cities'] ?? [],
             'favoriteIds' => $favoriteIds,
+            'firstPhotos' => $firstPhotos,
+            'popularPosts' => $popularPosts,
+            'activity' => $activity,
         ]);
     }
 
@@ -61,6 +68,8 @@ class MainController extends Controller
             return;
         }
         $user = $this->getLoggedUser();
+        $this->postService->registerView($postId, $user ? (int) $user['id'] : null);
+        $data['post']['view_count'] = (int) ($data['post']['view_count'] ?? 0) + 1;
         $isFavorite = $user && $this->favoriteRepo->has((int) $user['id'], $postId);
         $this->render('main/detail', [
             'post' => $data['post'],
@@ -81,16 +90,12 @@ class MainController extends Controller
     {
         $this->requireAuth();
         if (!$this->validateCsrf()) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
             return;
         }
         $user = $this->getLoggedUser();
         $result = $this->postService->create($_POST, $_FILES, (int) $user['id']);
-        if (!$result['success']) {
-            $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 400);
-            return;
-        }
-        $this->json(['success' => true, 'id' => $result['id']]);
+        $this->jsonResult($result);
     }
 
     public function myPosts(): void
@@ -124,33 +129,24 @@ class MainController extends Controller
     {
         $this->requireAuth();
         if (!$this->validateCsrf()) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
             return;
         }
         $user = $this->getLoggedUser();
         $result = $this->postService->update((int) $id, $_POST, $_FILES, (int) $user['id']);
-        if (!$result['success']) {
-            $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 400);
-            return;
-        }
-        $this->json(['success' => true, 'id' => (int) $id]);
+        $this->jsonResult($result);
     }
 
     public function delete(string $id): void
     {
         $this->requireAuth();
-        $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
-        if ($token === '' || !hash_equals(csrf_token(), $token)) {
-            $this->json(['success' => false, 'error' => 'Ошибка безопасности. Обновите страницу.'], 403);
+        if (!$this->validateCsrf()) {
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
             return;
         }
         $user = $this->getLoggedUser();
         $result = $this->postService->delete((int) $id, (int) $user['id']);
-        if (!$result['success']) {
-            $this->json(['success' => false, 'error' => $result['error']], $result['code'] ?? 404);
-            return;
-        }
-        $this->json(['success' => true]);
+        $this->jsonResult($result);
     }
 
     public function favorites(): void

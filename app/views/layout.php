@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
     <meta name="app-base" content="<?= htmlspecialchars(rtrim(parse_url($config['app']['url'] ?? '', PHP_URL_PATH) ?: '', '/')) ?>">
+    <meta name="app-history-limit" content="<?= (int)($config['app']['history_limit'] ?? 10) ?>">
+    <?php if (!empty($GLOBALS['_debugbar_renderer'])): echo $GLOBALS['_debugbar_renderer']->renderHead(); endif; ?>
     <title><?= htmlspecialchars($config['app']['name'] ?? 'Доска объявлений') ?> - продажа недвижимости</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -76,7 +78,16 @@
         }
     </style>
 </head>
-<body>
+<body data-page="<?= htmlspecialchars(str_replace('main/', '', $view ?? '')) ?>">
+    <?php
+    ensure_session();
+    $isAdmin = !empty($user) && (int) ($user['is_admin'] ?? 0) === 1;
+    $assetUrl = static function (string $path): string {
+        $fullPath = dirname(__DIR__, 2) . '/public' . $path;
+        $version = file_exists($fullPath) ? (string) filemtime($fullPath) : (string) time();
+        return $path . '?v=' . rawurlencode($version);
+    };
+    ?>
     <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
         <div class="container">
             <a class="navbar-brand" href="/"><?= htmlspecialchars($config['app']['name']) ?></a>
@@ -88,6 +99,9 @@
                     <li class="nav-item"><a class="nav-link" href="/">Объявления</a></li>
                     <?php if ($user): ?>
                     <li class="nav-item"><a class="nav-link" href="/add">Добавить объявление</a></li>
+                    <?php endif; ?>
+                    <?php if ($isAdmin): ?>
+                    <li class="nav-item"><a class="nav-link text-danger" href="/admin-report">Админ-отчёт</a></li>
                     <?php endif; ?>
                 </ul>
                 <div class="d-flex gap-2">
@@ -116,7 +130,7 @@
         </div>
     </main>
 
-    <div id="toastContainer" class="toast-container"></div>
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
     <footer class="py-4 mt-auto text-muted small border-top">
         <div class="container text-center">Доска объявлений о продаже недвижимости. Саратов и Энгельс.</div>
     </footer>
@@ -193,7 +207,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.5.25/dist/vue.global.prod.js"></script>
-    <script src="/assets/app.js"></script>
-    <script src="/assets/ux.js"></script>
+    <script src="<?= htmlspecialchars($assetUrl('/assets/api.js')) ?>"></script>
+    <script src="<?= htmlspecialchars($assetUrl('/assets/ux.js')) ?>"></script>
+    <script src="<?= htmlspecialchars($assetUrl('/assets/vue/shared.js')) ?>"></script>
+    <script src="<?= htmlspecialchars($assetUrl('/assets/vue/forms.js')) ?>"></script>
+    <script src="<?= htmlspecialchars($assetUrl('/assets/vue/favorites.js')) ?>"></script>
+    <script src="<?= htmlspecialchars($assetUrl('/assets/vue/gallery.js')) ?>"></script>
+    <script src="<?= htmlspecialchars($assetUrl('/assets/vue-app.js')) ?>"></script>
+    <?php if (!empty($GLOBALS['_debugbar_renderer'])): echo $GLOBALS['_debugbar_renderer']->render(); endif; ?>
 </body>
 </html>
