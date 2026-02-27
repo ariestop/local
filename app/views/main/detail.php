@@ -18,6 +18,23 @@ $photos = $photos ?? [];
     </div>
     <div class="d-flex gap-1 overflow-auto justify-content-center mt-2 py-2" id="detailThumbs"></div>
 </div>
+<?php else: ?>
+<div class="mb-4 position-relative detail-photo-wrap">
+    <div class="text-center bg-light rounded overflow-hidden p-2">
+        <svg viewBox="0 0 1200 675" role="img" aria-label="Заглушка: фото отсутствуют" style="width:100%;max-height:250px;display:block">
+            <rect width="1200" height="675" rx="24" fill="#F3F4F6"></rect>
+            <rect x="286" y="160" width="628" height="355" rx="16" fill="#E5E7EB"></rect>
+            <rect x="340" y="228" width="190" height="220" rx="10" fill="#D1D5DB"></rect>
+            <rect x="560" y="228" width="95" height="95" rx="10" fill="#D1D5DB"></rect>
+            <rect x="675" y="228" width="95" height="95" rx="10" fill="#D1D5DB"></rect>
+            <rect x="790" y="228" width="70" height="220" rx="10" fill="#D1D5DB"></rect>
+            <path d="M252 268L600 92L948 268" stroke="#9CA3AF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"></path>
+            <circle cx="600" cy="370" r="56" fill="#9CA3AF"></circle>
+            <path d="M600 345L610 365H634L614 378L622 401L600 388L578 401L586 378L566 365H590L600 345Z" fill="#F9FAFB"></path>
+            <text x="600" y="590" text-anchor="middle" fill="#6B7280" font-family="Segoe UI, Arial, sans-serif" font-size="38" font-weight="600">Нет фото объявления</text>
+        </svg>
+    </div>
+</div>
 <?php endif; ?>
 <div class="card border-0 shadow-sm">
     <div class="card-body">

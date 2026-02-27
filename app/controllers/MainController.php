@@ -39,6 +39,8 @@ class MainController extends Controller
         $activity = $this->postService->getActivity(7);
         $user = $this->getLoggedUser();
         $favoriteIds = $user ? $this->favoriteRepo->getPostIdsByUserId((int) $user['id']) : [];
+        $postIds = array_map(static fn(array $p): int => (int) ($p['id'] ?? 0), $result['posts']);
+        $firstPhotos = $this->postService->getFirstPhotosForPosts(array_values(array_filter($postIds)));
         $this->render('main/index', [
             'posts' => $result['posts'],
             'user' => $user,
@@ -50,6 +52,7 @@ class MainController extends Controller
             'actions' => $this->postService->getFormData()['actions'] ?? [],
             'cities' => $this->postService->getFormData()['cities'] ?? [],
             'favoriteIds' => $favoriteIds,
+            'firstPhotos' => $firstPhotos,
             'popularPosts' => $popularPosts,
             'activity' => $activity,
         ]);
