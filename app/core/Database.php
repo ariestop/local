@@ -21,10 +21,14 @@ final class Database
                     $config['dbname'],
                     $config['charset']
                 );
-                self::$connection = new PDO($dsn, $config['user'], $config['password'], [
+                $options = [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                ]);
+                ];
+                if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
+                    $options[PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+                }
+                self::$connection = new PDO($dsn, $config['user'], $config['password'], $options);
             } catch (\PDOException $e) {
                 if (php_sapi_name() !== 'cli') {
                     http_response_code(500);

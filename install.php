@@ -42,6 +42,53 @@ Flags:
 TXT;
 }
 
+function currentCliUser(): string
+{
+    $user = (string) ($_SERVER['USERNAME'] ?? $_ENV['USERNAME'] ?? getenv('USERNAME') ?: '');
+    if ($user !== '') {
+        return trim($user);
+    }
+    $user = (string) ($_SERVER['USER'] ?? $_ENV['USER'] ?? getenv('USER') ?: '');
+    return trim($user);
+}
+
+function resolveAllowedCliUsers(): array
+{
+    $raw = (string) ($_ENV['INSTALL_ALLOWED_USERS'] ?? getenv('INSTALL_ALLOWED_USERS') ?: 'Administrator');
+    $parts = preg_split('/[,\s;]+/', $raw) ?: [];
+    $users = [];
+    foreach ($parts as $part) {
+        $name = trim($part);
+        if ($name !== '') {
+            $users[] = $name;
+        }
+    }
+    $users = array_values(array_unique($users));
+    if ($users === []) {
+        throw new RuntimeException('INSTALL_ALLOWED_USERS is empty. Set at least one allowed CLI user.');
+    }
+    return $users;
+}
+
+function ensureCliAdminAllowed(): void
+{
+    $currentUser = currentCliUser();
+    if ($currentUser === '') {
+        throw new RuntimeException('Cannot determine current CLI user (USERNAME/USER is empty).');
+    }
+    $allowedUsers = resolveAllowedCliUsers();
+    foreach ($allowedUsers as $allowed) {
+        if (strcasecmp($allowed, $currentUser) === 0) {
+            out('INFO', "CLI access granted for user `{$currentUser}`.");
+            return;
+        }
+    }
+    throw new RuntimeException(
+        "Access denied for CLI user `{$currentUser}`. " .
+        'Only admin users from INSTALL_ALLOWED_USERS can run install.php.'
+    );
+}
+
 function normalizePath(string $root, string $path): string
 {
     $path = trim($path);
@@ -76,19 +123,27 @@ function preflightDumpPath(string $dumpPath): void
 function connectServer(array $db): PDO
 {
     $dsn = sprintf('mysql:host=%s;charset=%s', $db['host'], $db['charset']);
-    return new PDO($dsn, $db['user'], $db['password'] ?? '', [
+    $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    ];
+    if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
+        $options[PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+    }
+    return new PDO($dsn, $db['user'], $db['password'] ?? '', $options);
 }
 
 function connectDatabase(array $db): PDO
 {
     $dsn = sprintf('mysql:host=%s;dbname=%s;charset=%s', $db['host'], $db['dbname'], $db['charset']);
-    return new PDO($dsn, $db['user'], $db['password'] ?? '', [
+    $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    ];
+    if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
+        $options[PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+    }
+    return new PDO($dsn, $db['user'], $db['password'] ?? '', $options);
 }
 
 function databaseExists(PDO $serverPdo, string $dbName): bool
@@ -300,7 +355,16 @@ function executeSqlFile(PDO $pdo, string $file): void
     }
     $statements = splitSqlStatements($sql);
     foreach ($statements as $stmt) {
-        $pdo->exec($stmt);
+        $query = $pdo->prepare($stmt);
+        $query->execute();
+        do {
+            try {
+                $query->fetchAll();
+            } catch (Throwable) {
+                // No result set for this statement/rowset.
+            }
+        } while ($query->nextRowset());
+        $query->closeCursor();
     }
 }
 
@@ -465,7 +529,9 @@ function applyMigrations(PDO $pdo, string $migrationsDir, bool $dryRun, bool $st
             }
             $mark = $pdo->prepare('INSERT INTO schema_migrations (migration) VALUES (?)');
             $mark->execute([$name]);
-            $pdo->commit();
+            if ($pdo->inTransaction()) {
+                $pdo->commit();
+            }
             $result['applied']++;
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
@@ -506,20 +572,21 @@ function loadAppConfig(string $root): array
 
 function runInstaller(array $opts, string $root): int
 {
-    $config = loadAppConfig($root);
-    $db = $config['db'];
-    $dumpPath = resolveDumpPath($db, $root);
-    $migrationsDir = $root . '/migrations';
-    $dryRun = $opts['dry-run'];
-    $statusOnly = $opts['status'];
-    $forceBootstrap = $opts['force-bootstrap'];
-
-    out('INFO', '=== DB install/update start ===');
-    if ($dryRun) {
-        out('INFO', 'Dry-run mode enabled. No DB changes will be made.');
-    }
-
     try {
+        $config = loadAppConfig($root);
+        ensureCliAdminAllowed();
+        $db = $config['db'];
+        $dumpPath = resolveDumpPath($db, $root);
+        $migrationsDir = $root . '/migrations';
+        $dryRun = $opts['dry-run'];
+        $statusOnly = $opts['status'];
+        $forceBootstrap = $opts['force-bootstrap'];
+
+        out('INFO', '=== DB install/update start ===');
+        if ($dryRun) {
+            out('INFO', 'Dry-run mode enabled. No DB changes will be made.');
+        }
+
         preflightDumpPath($dumpPath);
 
         $serverPdo = connectServer($db);
