@@ -1,0 +1,77 @@
+Инструкция по развёртыванию проекта на macOS (через GitHub)
+
+1) Установите инструменты
+
+Рекомендуется через Homebrew:
+
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew update
+brew install git php composer mysql
+
+Проверьте:
+git --version
+php -v
+composer --version
+mysql --version
+
+
+2) Клонируйте репозиторий
+
+git clone https://github.com/ariestop/local.git
+cd local
+git checkout feature/edit-advert-and-delete
+git pull
+
+
+3) Установите PHP-зависимости
+
+composer install
+
+
+4) Запустите MySQL
+
+brew services start mysql
+
+Проверка:
+mysql -u root -e "SELECT VERSION();"
+
+Если у root есть пароль, используйте:
+mysql -u root -p -e "SELECT VERSION();"
+
+
+5) Настройте .env
+
+Скопируйте шаблон:
+cp .env.example .env
+
+Проверьте/заполните в .env:
+- APP_ENV=dev
+- DB_HOST=127.0.0.1
+- DB_NAME=infosee2_m2sar
+- DB_USER=root
+- DB_PASSWORD= (или ваш пароль)
+- APP_URL=http://localhost:8000
+
+Важно:
+Если задаёте SECURITY_CSP вручную, значение должно быть в двойных кавычках.
+
+
+6) Инициализируйте БД и примените миграции
+
+php install.php
+
+
+7) Запустите проект
+
+php -S localhost:8000 -t public
+
+Откройте в браузере:
+http://localhost:8000
+
+
+8) Обновление проекта в будущем
+
+git checkout feature/edit-advert-and-delete
+git pull
+composer install
+php install.php
