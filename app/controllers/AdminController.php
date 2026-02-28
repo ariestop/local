@@ -26,14 +26,14 @@ class AdminController extends Controller
         $this->requireAuth();
         if (!$this->isAdminAuthorizedByUser()) {
             http_response_code(403);
-            $this->render('main/admin-report', [
+            $this->render('main/admin', [
                 'adminAuthorized' => false,
                 'error' => 'Доступ запрещён. Нужны права администратора.',
             ]);
             return;
         }
 
-        $this->render('main/admin-report', [
+        $this->render('main/admin', [
             'adminAuthorized' => true,
             'summary' => $this->reportService->getSummary(),
             'popular' => $this->reportService->getPopularPosts(10),

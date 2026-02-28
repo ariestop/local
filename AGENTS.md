@@ -65,6 +65,10 @@ public/
 | POST | /api/favorite/toggle | ApiController | Добавить/убрать из избранного |
 | GET | /api/check-email | ApiController | Проверка email |
 | GET | /api/captcha | ApiController | Капча |
+| GET | /admin | AdminController::report | Главная страница админ-панели |
+| GET | /admin-migrations | AdminController::migrations | Страница миграций в админке |
+| POST | /admin-migrations/apply-next | AdminController::applyNextMigration | Применить следующую миграцию |
+| POST | /admin-migrations/apply | AdminController::applyMigration | Применить выбранную миграцию |
 
 ## Основные модели
 

@@ -8,8 +8,11 @@ $errors = $errors ?? [];
 ?>
 
 <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <h1 class="h4 mb-0">Админ-отчёт</h1>
-    <a href="/" class="btn btn-sm btn-outline-secondary">На главную</a>
+    <h1 class="h4 mb-0">Админ-панель</h1>
+    <div class="d-flex gap-2">
+        <a href="/admin-migrations" class="btn btn-sm btn-outline-secondary">Миграции</a>
+        <a href="/" class="btn btn-sm btn-outline-secondary">На главную</a>
+    </div>
 </div>
 
 <?php if (!$adminAuthorized): ?>

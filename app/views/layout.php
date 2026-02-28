@@ -101,8 +101,7 @@
                     <li class="nav-item"><a class="nav-link" href="/add">Добавить объявление</a></li>
                     <?php endif; ?>
                     <?php if ($isAdmin): ?>
-                    <li class="nav-item"><a class="nav-link text-danger" href="/admin-report">Админ-отчёт</a></li>
-                    <li class="nav-item"><a class="nav-link text-danger" href="/admin-migrations">Миграции</a></li>
+                    <li class="nav-item"><a class="nav-link text-danger" href="/admin">Админ-панель</a></li>
                     <?php endif; ?>
                 </ul>
                 <div class="d-flex gap-2">

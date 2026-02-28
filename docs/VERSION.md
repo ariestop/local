@@ -87,9 +87,9 @@
   - сервис `AppErrorService` сохраняет ошибки в `app_error_event` и в лог,
   - frontend (`public/assets/api.js`) отправляет `window.onerror`, `unhandledrejection` и сетевые/неожиданные API ошибки.
 
-### Админ-отчёт
+### Админ-панель
 
-- Добавлена страница `GET /admin-report` (контроллер `AdminController`, view `app/views/main/admin-report.php`).
+- Добавлена страница `GET /admin` (контроллер `AdminController`, view `app/views/main/admin.php`).
 - Доступ переведён на ролевую модель из БД:
   - колонка `user.is_admin` (`0` — пользователь, `1` — администратор),
   - пользователю `seolool@yandex.ru` назначается `is_admin = 1` миграцией.
