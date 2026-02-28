@@ -69,6 +69,8 @@ public/
 | GET | /admin-migrations | AdminController::migrations | Страница миграций в админке |
 | POST | /admin-migrations/apply-next | AdminController::applyNextMigration | Применить следующую миграцию |
 | POST | /admin-migrations/apply | AdminController::applyMigration | Применить выбранную миграцию |
+| POST | /admin/expire-posts | AdminController::runExpirePosts | Ручной запуск автоархивации (redirect-режим) |
+| POST | /admin/expire-posts-batch | AdminController::runExpirePostsBatch | Batch-запуск автоархивации (AJAX, по 100) |
 
 ## Основные модели
 
@@ -121,6 +123,8 @@ public/
 - `php install.php` — безопасный install/update скрипт:
   - 1-й запуск: создаёт БД, импортирует `public/infosee2_m2sar.sql`, затем применяет миграции;
   - последующие запуски: baseline-импорт пропускается, применяются только pending-миграции.
+- `php cron.php expire-posts` — CLI-обработка истёкших объявлений (auto-archive + email-уведомления).
+- Если планировщик задач недоступен, используйте fallback через `/admin` (ручной запуск батчами с прогрессом).
 - Новые миграции: добавляйте файлы `NNN_название.sql` или `NNN_название.php` в `migrations/` — install.php применяет только те, которых нет в `schema_migrations`
 
 ## Тестовый вход

@@ -21,6 +21,10 @@
 4. Запустить cron-задачу автоархивации объявлений:
    - `php cron.php expire-posts`
    - Рекомендуется ежедневный запуск по расписанию (Task Scheduler/cron).
+   - Если scheduler временно недоступен, выполните fallback через `/admin`:
+     - укажите требуемое количество объявлений к обработке;
+     - запуск идёт пакетами по 100 автоматически;
+     - контролируйте прогресс на странице и дождитесь итогового статуса.
 5. Выполнить smoke-check на production.
 6. Подписать go/no-go.
 
@@ -31,6 +35,7 @@
   - скорость ответов критичных endpoint;
   - успешность login/add/edit/archive/restore;
   - успешность cron-задачи `expire-posts` и почтовых уведомлений.
+  - для fallback-запуска из `/admin`: сверить итоговые значения `processed/archived/notified` и `pending_before/pending_after`.
 - Если появляются критичные ошибки, запускаем rollback.
 
 ## Rollback trigger

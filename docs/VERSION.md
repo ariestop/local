@@ -1,3 +1,15 @@
+### Обновление документации (manual cron fallback в админке)
+
+- Обновлён `README.md`:
+  - добавлено описание fallback-режима автоархивации через `/admin` при недоступном cron;
+  - описан пакетный запуск по 100, live-прогресс, остановка и итоговая статистика.
+- Обновлён `AGENTS.md`:
+  - добавлены маршруты `POST /admin/expire-posts` и `POST /admin/expire-posts-batch`;
+  - добавлено описание `php cron.php expire-posts` и админ-fallback.
+- Обновлён `docs/RUNBOOK.md`:
+  - добавлены шаги fallback-запуска из админки в release-процедуре;
+  - добавлены проверки итоговых метрик (`processed/archived/notified`, `pending_before/pending_after`) в stabilization window.
+
 ## 2026-02-27
 
 ### Refactor по roadmap (`docs/PLAN.md`)
