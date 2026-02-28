@@ -8,6 +8,7 @@ use App\Services\RateLimiter;
 use PHPUnit\Framework\TestCase;
 use Tests\Bootstrap\TestContainer;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 final class UserControllerTest extends TestCase
 {
     protected function setUp(): void

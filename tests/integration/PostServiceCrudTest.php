@@ -10,6 +10,7 @@ use App\Services\MailService;
 use App\Services\PostService;
 use PHPUnit\Framework\TestCase;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 final class PostServiceCrudTest extends TestCase
 {
     public function testCreateHappyPathReturnsId(): void

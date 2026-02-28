@@ -4,6 +4,8 @@
     colors="true"
     failOnRisky="true"
     failOnWarning="true"
+    failOnPhpunitNotice="true"
+    failOnPhpunitDeprecation="true"
     cacheResult="false"
 >
     <testsuites>

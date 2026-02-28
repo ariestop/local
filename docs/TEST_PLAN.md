@@ -67,5 +67,6 @@ Endpoint-минимум:
   - `composer audit`
   - `composer test:unit`
   - `composer test:integration`
+- Quality gate усилен: `phpunit.xml` блокирует сборку при `PHPUnit notice/deprecation` (`failOnPhpunitNotice`, `failOnPhpunitDeprecation`).
 - Если любой шаг падает, merge/release блокируется до устранения причины.
 - Для нового багфикса добавляется regression-тест в соответствующий suite (`unit` или `integration`).
