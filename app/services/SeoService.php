@@ -67,6 +67,13 @@ class SeoService
 
         $title = ucfirst(trim(implode(' ', $titleParts))) . ' | Квадратный метр';
         $description = trim(implode(', ', $descParts)) . '. Актуальные объявления с фото и ценами.';
+        $breadcrumbs = [
+            [
+                'position' => 1,
+                'name' => 'Главная',
+                'url' => $this->buildAbsoluteUrl('/'),
+            ],
+        ];
 
         return [
             'title' => $title,
@@ -74,6 +81,7 @@ class SeoService
             'canonical' => $canonical,
             'robots' => $isIndexable ? 'index,follow' : 'noindex,follow',
             'og_type' => 'website',
+            'breadcrumbs' => $breadcrumbs,
             'json_ld' => [
                 [
                     '@context' => 'https://schema.org',
@@ -87,18 +95,7 @@ class SeoService
                     'name' => (string) ($this->config['app']['name'] ?? 'Квадратный метр'),
                     'url' => $this->buildAbsoluteUrl('/'),
                 ],
-                [
-                    '@context' => 'https://schema.org',
-                    '@type' => 'BreadcrumbList',
-                    'itemListElement' => [
-                        [
-                            '@type' => 'ListItem',
-                            'position' => 1,
-                            'name' => 'Главная',
-                            'item' => $this->buildAbsoluteUrl('/'),
-                        ],
-                    ],
-                ],
+                $this->buildBreadcrumbJsonLd($breadcrumbs),
             ],
         ];
     }
@@ -124,6 +121,22 @@ class SeoService
         $description = mb_substr($description, 0, 180);
 
         $canonical = $this->buildAbsoluteUrl('/detail/' . $postId);
+        $detailCrumbName = trim((string) ($post['action_name'] ?? '') . ' ' . (string) ($post['object_name'] ?? ''));
+        if ($detailCrumbName === '') {
+            $detailCrumbName = $postId > 0 ? 'Объявление #' . $postId : 'Объявление';
+        }
+        $breadcrumbs = [
+            [
+                'position' => 1,
+                'name' => 'Главная',
+                'url' => $this->buildAbsoluteUrl('/'),
+            ],
+            [
+                'position' => 2,
+                'name' => $detailCrumbName,
+                'url' => $canonical,
+            ],
+        ];
         $imageUrl = '';
         if (!empty($photos[0]['filename'])) {
             $imageUrl = $this->buildAbsoluteUrl(
@@ -132,24 +145,7 @@ class SeoService
         }
 
         $jsonLd = [
-            [
-                '@context' => 'https://schema.org',
-                '@type' => 'BreadcrumbList',
-                'itemListElement' => [
-                    [
-                        '@type' => 'ListItem',
-                        'position' => 1,
-                        'name' => 'Главная',
-                        'item' => $this->buildAbsoluteUrl('/'),
-                    ],
-                    [
-                        '@type' => 'ListItem',
-                        'position' => 2,
-                        'name' => 'Объявление',
-                        'item' => $canonical,
-                    ],
-                ],
-            ],
+            $this->buildBreadcrumbJsonLd($breadcrumbs),
             [
                 '@context' => 'https://schema.org',
                 '@type' => 'Product',
@@ -172,7 +168,27 @@ class SeoService
             'canonical' => $canonical,
             'robots' => 'index,follow',
             'og_type' => 'product',
+            'breadcrumbs' => $breadcrumbs,
             'json_ld' => $jsonLd,
+        ];
+    }
+
+    private function buildBreadcrumbJsonLd(array $breadcrumbs): array
+    {
+        $items = [];
+        foreach ($breadcrumbs as $breadcrumb) {
+            $items[] = [
+                '@type' => 'ListItem',
+                'position' => (int) ($breadcrumb['position'] ?? 0),
+                'name' => (string) ($breadcrumb['name'] ?? ''),
+                'item' => (string) ($breadcrumb['url'] ?? ''),
+            ];
+        }
+
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => $items,
         ];
     }
 

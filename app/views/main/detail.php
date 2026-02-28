@@ -2,6 +2,7 @@
 $uid = (int) ($post['user_id'] ?? 0);
 $pid = (int) ($post['id'] ?? 0);
 $photos = $photos ?? [];
+$breadcrumbs = is_array($breadcrumbs ?? null) ? $breadcrumbs : [];
 $rawPhone = (string) ($post['phone'] ?? '');
 $phoneDigits = preg_replace('/\D+/', '', $rawPhone) ?? '';
 $displayPhone = $rawPhone;
@@ -65,7 +66,24 @@ if ($pageTitle === '') {
 </div>
 
 <div class="detail-shell shadow-sm">
-    <div class="detail-breadcrumbs">Крыша / Продажа <?= htmlspecialchars((string) ($post['object_name'] ?? 'объектов')) ?></div>
+    <?php if ($breadcrumbs !== []): ?>
+    <nav aria-label="breadcrumb" class="detail-breadcrumbs">
+        <ol class="breadcrumb mb-0">
+            <?php foreach ($breadcrumbs as $idx => $crumb): ?>
+                <?php
+                $isLast = $idx === array_key_last($breadcrumbs);
+                $crumbName = htmlspecialchars((string) ($crumb['name'] ?? ''));
+                $crumbUrl = (string) ($crumb['url'] ?? '');
+                ?>
+                <?php if ($isLast || $crumbUrl === ''): ?>
+            <li class="breadcrumb-item active" aria-current="page"><?= $crumbName ?></li>
+                <?php else: ?>
+            <li class="breadcrumb-item"><a href="<?= htmlspecialchars($crumbUrl) ?>"><?= $crumbName ?></a></li>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </ol>
+    </nav>
+    <?php endif; ?>
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-2">
         <h1 class="detail-title"><?= htmlspecialchars($pageTitle) ?></h1>
         <div class="detail-top-actions flex-wrap justify-content-end">

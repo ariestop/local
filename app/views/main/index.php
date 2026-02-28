@@ -10,8 +10,27 @@ $popularPosts = $popularPosts ?? [];
 $activity = $activity ?? [];
 $firstPhotos = $firstPhotos ?? [];
 $isAdmin = (bool) ($isAdmin ?? false);
+$breadcrumbs = is_array($breadcrumbs ?? null) ? $breadcrumbs : [];
 $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort], $over));
 ?>
+<?php if ($breadcrumbs !== []): ?>
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb small mb-0">
+        <?php foreach ($breadcrumbs as $idx => $crumb): ?>
+            <?php
+            $isLast = $idx === array_key_last($breadcrumbs);
+            $crumbName = htmlspecialchars((string) ($crumb['name'] ?? ''));
+            $crumbUrl = (string) ($crumb['url'] ?? '');
+            ?>
+            <?php if ($isLast || $crumbUrl === ''): ?>
+        <li class="breadcrumb-item active" aria-current="page"><?= $crumbName ?></li>
+            <?php else: ?>
+        <li class="breadcrumb-item"><a href="<?= htmlspecialchars($crumbUrl) ?>"><?= $crumbName ?></a></li>
+            <?php endif; ?>
+        <?php endforeach; ?>
+    </ol>
+</nav>
+<?php endif; ?>
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h1 class="h4 mb-0">Продажа недвижимости</h1>
     <?php if ($user): ?>

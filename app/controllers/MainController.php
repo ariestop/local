@@ -71,6 +71,7 @@ class MainController extends Controller
             'activity' => $activity,
             'isAdmin' => $isAdmin,
             'seo' => $seo,
+            'breadcrumbs' => $seo['breadcrumbs'] ?? [],
         ]);
     }
 
@@ -101,6 +102,7 @@ class MainController extends Controller
             'user' => $user,
             'isFavorite' => $isFavorite,
             'seo' => $seo,
+            'breadcrumbs' => $seo['breadcrumbs'] ?? [],
         ]);
     }
 
