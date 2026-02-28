@@ -3,7 +3,7 @@
  */
 (function() {
     'use strict';
-    const MAX_PHOTOS = 5;
+    const MAX_PHOTOS = 10;
     const MAX_BYTES = 5 * 1024 * 1024;
 
     function showPhotoSizeError(msg) {
@@ -74,7 +74,7 @@
         if (!form || !input) return;
         const wrap = document.createElement('div');
         wrap.className = 'photo-preview-area';
-        wrap.innerHTML = '<div class="photo-preview-list" id="addPhotoPreviewList"></div><p class="form-text">До 5 фото. Перетащите для сортировки.</p>';
+        wrap.innerHTML = '<div class="photo-preview-list" id="addPhotoPreviewList"></div><p class="form-text">До 10 фото. Перетащите для сортировки.</p>';
         input.parentNode.insertBefore(wrap, input);
 
         input.addEventListener('change', function() {
@@ -161,6 +161,41 @@
             syncEditFormFiles(form);
         });
         initSortable(form, listEl, true);
+    }
+
+    function initEditSelectAllPhotos() {
+        const form = document.getElementById('editForm');
+        const selectAll = document.getElementById('selectAllEditPhotos');
+        if (!form || !selectAll) return;
+
+        const getBoxes = () => Array.from(form.querySelectorAll('.photo-delete'));
+        const updateMaster = () => {
+            const boxes = getBoxes();
+            if (!boxes.length) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+                return;
+            }
+            const checked = boxes.filter((cb) => cb.checked).length;
+            selectAll.checked = checked === boxes.length;
+            selectAll.indeterminate = checked > 0 && checked < boxes.length;
+        };
+
+        selectAll.addEventListener('change', () => {
+            const checked = selectAll.checked;
+            getBoxes().forEach((cb) => {
+                cb.checked = checked;
+            });
+            selectAll.indeterminate = false;
+        });
+
+        form.addEventListener('change', (e) => {
+            if (e.target && e.target.classList && e.target.classList.contains('photo-delete')) {
+                updateMaster();
+            }
+        });
+
+        updateMaster();
     }
 
     function getDragAfter(container, x, y) {
@@ -267,6 +302,7 @@
         initLazyImages();
         initAddPhotoPreview();
         initEditPhotoPreview();
+        initEditSelectAllPhotos();
         initCopyPhone();
     });
 })();

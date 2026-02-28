@@ -70,7 +70,14 @@ $photos = $photos ?? [];
                     <textarea name="descr_post" class="form-control" rows="4" required><?= htmlspecialchars($post['descr_post'] ?? '') ?></textarea>
                 </div>
                 <div class="col-12">
-                    <label class="form-label">Фотографии (до 5 шт.)</label>
+                    <label class="form-label">Фотографии (до 10 шт.)</label>
+                    <?php if (!empty($photos)): ?>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="selectAllEditPhotos">
+                        <label class="form-check-label small text-muted" for="selectAllEditPhotos">Выбрать все фото для удаления</label>
+                    </div>
+                    <div id="editDeleteInfo" class="small text-muted mb-2"></div>
+                    <?php endif; ?>
                     <?php if (!empty($photos)): ?>
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         <?php foreach ($photos as $ph): ?>

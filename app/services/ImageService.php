@@ -13,7 +13,7 @@ class ImageService
     {
         return self::MAX_SIZE;
     }
-    private const MAX_FILES = 5;
+    private const MAX_FILES = 10;
     private const MAX_LARGE_W = 1200;
     private const MAX_LARGE_H = 675;
 
@@ -94,20 +94,113 @@ class ImageService
         $dstLarge = imagecreatetruecolor($largeW, $largeH);
         if ($dstLarge) {
             imagecopyresampled($dstLarge, $src, 0, 0, 0, 0, $largeW, $largeH, $w, $h);
+            $this->applyWatermark($dstLarge, $largeW, $largeH);
             $save($dstLarge, $largePath);
             imagedestroy($dstLarge);
         }
 
-        foreach ([[200, 150], [400, 300]] as [$tw, $th]) {
-            $dst = imagecreatetruecolor($tw, $th);
+        foreach ([[200, 150], [750, 470]] as [$tw, $th]) {
+            $isVertical = $h > $w;
+            $dst = ($tw === 750 && $th === 470 && $isVertical)
+                ? $this->createFittedVariant($src, $w, $h, $tw, $th)
+                : $this->createCroppedVariant($src, $w, $h, $tw, $th);
             if ($dst) {
-                imagecopyresampled($dst, $src, 0, 0, 0, 0, $tw, $th, $w, $h);
+                if (!($tw === 200 && $th === 150)) {
+                    $this->applyWatermark($dst, $tw, $th);
+                }
                 $save($dst, $dir . '/' . $base . "_{$tw}x{$th}.{$ext}");
                 imagedestroy($dst);
             }
         }
         imagedestroy($src);
         @unlink($path);
+    }
+
+    private function createCroppedVariant($src, int $srcW, int $srcH, int $dstW, int $dstH)
+    {
+        $dst = imagecreatetruecolor($dstW, $dstH);
+        if (!$dst) {
+            return null;
+        }
+
+        $scale = max($dstW / max(1, $srcW), $dstH / max(1, $srcH));
+        $cropW = (int) max(1, round($dstW / $scale));
+        $cropH = (int) max(1, round($dstH / $scale));
+        $srcX = (int) max(0, floor(($srcW - $cropW) / 2));
+        $srcY = (int) max(0, floor(($srcH - $cropH) / 2));
+
+        imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $dstW, $dstH, $cropW, $cropH);
+        return $dst;
+    }
+
+    private function createFittedVariant($src, int $srcW, int $srcH, int $dstW, int $dstH)
+    {
+        $dst = imagecreatetruecolor($dstW, $dstH);
+        if (!$dst) {
+            return null;
+        }
+
+        $bg = imagecolorallocate($dst, 246, 248, 251);
+        imagefilledrectangle($dst, 0, 0, $dstW, $dstH, $bg);
+
+        $scale = min($dstW / max(1, $srcW), $dstH / max(1, $srcH));
+        $fitW = (int) max(1, round($srcW * $scale));
+        $fitH = (int) max(1, round($srcH * $scale));
+        $dstX = (int) floor(($dstW - $fitW) / 2);
+        $dstY = (int) floor(($dstH - $fitH) / 2);
+
+        imagecopyresampled($dst, $src, $dstX, $dstY, 0, 0, $fitW, $fitH, $srcW, $srcH);
+        return $dst;
+    }
+
+    private function applyWatermark($img, int $imgW, int $imgH): void
+    {
+        if ($imgW < 120 || $imgH < 80) {
+            return;
+        }
+
+        imagealphablending($img, true);
+        imagesavealpha($img, true);
+
+        $font = $imgW >= 900 ? 5 : ($imgW >= 600 ? 4 : 3);
+        $text = 'm2saratov.ru';
+        $textW = imagefontwidth($font) * strlen($text);
+        $textH = imagefontheight($font);
+        $iconSize = max(12, (int) round($textH * 1.2));
+        $gap = max(6, (int) round($iconSize * 0.35));
+        $padding = max(8, (int) round(min($imgW, $imgH) * 0.025));
+        $wmW = $iconSize + $gap + $textW;
+        $wmH = max($iconSize, $textH);
+        $x = max(0, $imgW - $padding - $wmW);
+        $y = max(0, $imgH - $padding - $wmH);
+
+        $textShadow = imagecolorallocatealpha($img, 0, 0, 0, 95);
+        $textColor = imagecolorallocatealpha($img, 255, 255, 255, 58);
+        $lineColor = imagecolorallocatealpha($img, 255, 255, 255, 58);
+
+        imagestring($img, $font, $x + $iconSize + $gap + 1, $y + 1, $text, $textShadow);
+        imagestring($img, $font, $x + $iconSize + $gap, $y, $text, $textColor);
+
+        $ix = $x;
+        $iy = $y + max(0, (int) floor(($wmH - $iconSize) / 2));
+        $left = $ix;
+        $top = $iy;
+        $right = $ix + $iconSize;
+        $bottom = $iy + $iconSize;
+        $midX = (int) floor(($left + $right) / 2);
+        $roofY = $top + (int) floor($iconSize * 0.35);
+        $baseY = $bottom - 1;
+
+        imagesetthickness($img, 2);
+        imageline($img, $left, $roofY, $midX, $top, $lineColor);
+        imageline($img, $midX, $top, $right, $roofY, $lineColor);
+        imagerectangle($img, $left + 1, $roofY, $right - 1, $baseY, $lineColor);
+        $doorW = max(3, (int) floor($iconSize * 0.22));
+        $doorH = max(4, (int) floor($iconSize * 0.3));
+        $doorX1 = $midX - (int) floor($doorW / 2);
+        $doorY1 = $baseY - $doorH;
+        imagerectangle($img, $doorX1, $doorY1, $doorX1 + $doorW, $baseY, $lineColor);
+        imagesetthickness($img, 1);
     }
 
     public function deletePostFolder(int $userId, int $postId): void
@@ -135,6 +228,7 @@ class ImageService
             $dir . '/' . $filename,
             $dir . '/' . $base . '_200x150.' . $ext,
             $dir . '/' . $base . '_400x300.' . $ext,
+            $dir . '/' . $base . '_750x470.' . $ext,
             $dir . '/' . $base . '_1200x675.' . $ext,
         ];
         foreach ($patterns as $p) {

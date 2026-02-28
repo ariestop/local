@@ -88,7 +88,7 @@ public/
 
 Путь: `public/images/{user_id}/{post_id}/`  
 Файлы: `{base}_{w}x{h}.{ext}` — например `1_xxx_200x150.jpg`, `1_xxx_1200x675.jpg`.  
-Разрешения: JPEG, PNG, GIF, WebP. До 5 фото на объявление, до 5 МБ на файл.
+Разрешения: JPEG, PNG, GIF, WebP. До 10 фото на объявление, до 5 МБ на файл.
 
 ## AJAX и frontend
 

@@ -201,6 +201,35 @@
             const draftKey = this.getDraftKey('edit', postId || 'unknown');
             this.initFormDraft(form, draftKey);
             this.bindClearDraftButton('clearEditDraftBtn', draftKey, form);
+            const trackedFieldNames = ['action_id', 'object_id', 'city_id', 'area_id', 'street', 'room', 'm2', 'new_house', 'descr_post', 'phone', 'cost', 'title'];
+            const getTrackedState = () => {
+                const state = {};
+                trackedFieldNames.forEach((name) => {
+                    const el = form.elements.namedItem(name);
+                    if (!el) return;
+                    const value = (el.value ?? '').toString().trim();
+                    state[name] = value;
+                });
+                return state;
+            };
+            let initialTrackedState = getTrackedState();
+            setTimeout(() => {
+                initialTrackedState = getTrackedState();
+            }, 250);
+
+            const deleteInfo = document.getElementById('editDeleteInfo');
+            const updateDeleteInfo = () => {
+                if (!deleteInfo) return;
+                const checkedCount = form.querySelectorAll('.photo-delete:checked').length;
+                deleteInfo.textContent = checkedCount > 0 ? ('Удаляются: ' + checkedCount + ' фото') : '';
+            };
+            form.addEventListener('change', (event) => {
+                if (event.target && event.target.classList?.contains('photo-delete')) {
+                    updateDeleteInfo();
+                }
+            }, true);
+            updateDeleteInfo();
+
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 window.hideError?.('editError');
@@ -212,6 +241,13 @@
                     const toDel = [...form.querySelectorAll('.photo-delete:checked')].map((cb) => cb.value);
                     delInput.value = toDel.join(',');
                 }
+                const hasDeleteByCheckbox = (delInput?.value || '') !== '';
+                const hasNewPhotos = (form.querySelector('input[name="photos[]"]')?.files?.length || 0) > 0;
+                const currentTrackedState = getTrackedState();
+                const hasFormFieldChanges = trackedFieldNames.some((name) => {
+                    return String(currentTrackedState[name] ?? '') !== String(initialTrackedState[name] ?? '');
+                });
+
                 if (list) {
                     const order = [];
                     list.querySelectorAll('.photo-preview-item').forEach((el) => {
@@ -234,7 +270,11 @@
                     if (data.success) {
                         this.clearFormDraft(draftKey);
                         window.showToast?.('Изменения сохранены');
-                        window.location.href = '/detail/' + data.id;
+                        if (hasDeleteByCheckbox && !hasFormFieldChanges && !hasNewPhotos) {
+                            window.location.reload();
+                        } else {
+                            window.location.href = '/edit-advert';
+                        }
                     } else {
                         window.showError?.('editError', data.error || 'Ошибка');
                         window.showToast?.(data.error || 'Не удалось сохранить изменения', 'warning');
