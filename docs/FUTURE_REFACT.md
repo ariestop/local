@@ -1,88 +1,95 @@
-# План улучшения логики проекта (Senior Roadmap)
+# План улучшения логики проекта (Senior Roadmap v2)
 
-## Цели
-- Снизить риск регрессий и прод-инцидентов.
-- Усилить безопасность и предсказуемость поведения в разных окружениях (`mod_rewrite` и front-controller).
-- Сократить техдолг в маршрутизации, миграциях и слоях приложения.
-- Ввести минимальные engineering-gates: тесты, CI, наблюдаемость.
+## 1) Итог по этапу 1-10
+- ✅ P1.1 Router hardening
+- ✅ P1.2 Atomic DB + FS
+- ✅ P1.3 Upload security hardening
+- ✅ P1.4 Auth session hardening
+- ✅ P1.5 Unified URL logic
+- ✅ P1.6 Unified migration core
+- ✅ P2.7 XSS/CSP baseline hardening
+- ✅ P2.8 UX/A11y baseline
+- ✅ P2.9 CI + quality gates
+- ✅ P2.10 Critical flow test expansion
 
-## Текущее состояние (сильные стороны)
-- Понятная MVC-структура и рабочий сервисный слой.
-- Есть install/миграционный контур, `cron.php`, runbook.
-- Реализованы базовые security-механизмы (CSRF, заголовки, контроль доступа).
-- Поддерживаются оба URL-режима и в PHP, и в JS.
+## 2) Архив выполненных задач (спринт 1)
+1. ✅ `Router.php`: безопасная сборка regex + проверка action перед dispatch.
+2. ✅ `ImageService.php`: server-side MIME + строгая обработка `UPLOAD_ERR_*`.
+3. ✅ `UserController.php`: `session_regenerate_id(true)` после успешных auth-flow.
+4. ✅ `PostService.php` + `ImageService.php`: staging/commit/compensation для файлов.
+5. ✅ `tests/` + `phpunit.xml`: smoke/integration на критичные сценарии.
+6. ✅ Документация `docs/TEST_PLAN.md`: актуализирован checklist.
 
-## Приоритеты улучшений
+---
 
-### P1 — надёжность и безопасность
-1. ✅ Усилить маршрутизацию в `app/core/Router.php` (оценка: **M**, выполнено):
-   - безопасная компиляция route-regex,
-   - проверка существования action до вызова,
-   - единая обработка 404/405.
-2. ✅ Исправить неатомарность «БД + файловая система» в `app/services/PostService.php` и `app/services/ImageService.php` (оценка: **L**, выполнено):
-   - staging для файлов,
-   - перенос/удаление только после успешного commit,
-   - компенсационные действия при ошибках.
-3. ✅ Усилить upload-security в `app/services/ImageService.php` (оценка: **S**, выполнено):
-   - серверная проверка MIME (`finfo`/`exif_imagetype`),
-   - строгая обработка `UPLOAD_ERR_*`,
-   - не доверять клиентскому `$_FILES['type']`.
-4. ✅ Укрепить auth-session flow в `app/controllers/UserController.php` (оценка: **S**, выполнено):
-   - `session_regenerate_id(true)` после успешной аутентификации.
+## 3) Next Wave (после закрытия 1-10)
 
-### P1 — архитектурная консистентность
-5. ✅ Унифицировать URL-логику (оценка: **M**, выполнено):
-   - PHP: `app/helpers.php`, `public_html/index.php`, `app/services/SeoService.php`, `app/controllers/SeoController.php`,
-   - JS: `public_html/assets/api.js`,
-   - цель: единый resolver режима URL и единые правила построения ссылок.
-6. ✅ Убрать дубли миграционной логики между `install.php` и `app/services/MigrationService.php` (оценка: **L**, выполнено):
-   - общий SQL parser/executor,
-   - общий preflight и защита от параллельного запуска.
+### NW-1: CSP Tightening (приоритет: High, оценка: M)
+**Цель:** перейти от baseline CSP к строгой политике без `unsafe-inline`/`unsafe-eval`.
 
-### P2 — frontend, тесты, эксплуатация
-7. ✅ Снизить XSS/CSP-риски (оценка: **M**, выполнено):
-   - убрать опасные `innerHTML` в JS-модулях,
-   - вынести inline JS/CSS из `app/views/*`.
-8. ✅ Улучшить UX/A11y (оценка: **M**, выполнено):
-   - `aria-label`, корректные `alt`, keyboard-friendly взаимодействия.
-9. ✅ Ввести базовый CI и quality gates (оценка: **S**, выполнено):
-   - `composer validate/install/audit`,
-   - `phpunit` как обязательная проверка.
-10. ✅ Расширить тесты критического контура (оценка: **M**, выполнено):
-   - auth, CRUD объявлений, URL mode, router-contract, install/migrations smoke.
+- [ ] Ввести `Content-Security-Policy-Report-Only` для финальной калибровки.
+- [ ] Собрать и устранить нарушения (scripts/styles/events).
+- [ ] Перейти на production CSP enforce.
+- [ ] Убрать `unsafe-inline` и `unsafe-eval` из `SECURITY_CSP`.
 
-## Этапный план внедрения
+**DoD:**
+- 0 критичных CSP violations в отчётах.
+- `script-src/style-src` без `unsafe-inline` и `unsafe-eval`.
+- Все ключевые UI-флоу работают без fallback-послаблений.
 
-### Итерация 1 (1–2 недели): Risk Burn-Down
-- Router hardening.
-- Upload security + session hardening.
-- Консистентность «БД + файлы» для create/update/delete.
-- Smoke-тесты: login, add/edit/delete, detail, favorites.
+---
 
-### Конкретные задачи спринта 1
-1. `Router.php`: добавить безопасную сборку regex для маршрутов и проверку `method_exists` перед dispatch.
-2. `ImageService.php`: внедрить серверную MIME-проверку и строгую обработку `UPLOAD_ERR_*`.
-3. `UserController.php`: добавить `session_regenerate_id(true)` после успешных auth-сценариев.
-4. `PostService.php` + `ImageService.php`: выделить staging-поток для файлов и переносить изменения только после commit.
-5. `tests/` + `phpunit.xml`: добавить smoke/integration тесты на login, add/edit/delete, detail, favorites.
-6. Документация: обновить `docs/TEST_PLAN.md` чеклистом проверки после каждого пункта 1-5.
+### NW-2: Shared Rate Limiting Storage (приоритет: High, оценка: M/L)
+**Цель:** отказаться от session-only лимитинга, обеспечить консистентность между инстансами.
 
-### Итерация 2 (2–3 недели): Platform Consistency
-- Единый URL resolver для PHP/JS/SEO/sitemap.
-- Объединение install/migrations core.
-- Перевод rate limiting на shared storage (DB/Redis).
-- Упрощение границ data-access слоёв.
+- [ ] Вынести хранилище лимитов в DB/Redis abstraction.
+- [ ] Реализовать адаптер и миграционный план.
+- [ ] Подключить `UserController`/`ApiController` к shared backend.
+- [ ] Добавить контрактные тесты для multi-request/multi-session сценариев.
 
-### Итерация 3 (2–4 недели): Engineering Maturity
-- CI pipeline + обязательные проверки merge.
-- Рост unit/integration/contract покрытия.
-- CSP-совместимый фронтенд (без inline-паттернов).
-- Логи/метрики/алерты + регулярный rollback/restore drill.
+**DoD:**
+- Лимиты одинаково применяются между сессиями/инстансами.
+- Есть fallback-режим и наблюдаемость по hit/blocked/retry_after.
+- Покрытие тестами основных rate-limit веток.
 
-## Критерии готовности
-- Router не выполняет небезопасный dynamic dispatch.
-- Нет рассинхронизации между БД и файлами после ошибок.
-- Upload проходит серверную валидацию типа и ошибок.
-- После auth-flow всегда регенерируется session id.
-- URL-режим одинаково корректен в PHP и JS (контрактно проверено).
-- CI обязателен для merge, критичные сценарии покрыты тестами.
+---
+
+### NW-3: Observability & Ops Readiness (приоритет: Medium, оценка: M)
+**Цель:** повысить эксплуатационную зрелость.
+
+- [ ] Структурировать app-логи (уровни, контекст, correlation id).
+- [ ] Добавить базовые метрики (ошибки, 5xx, latency critical endpoints).
+- [ ] Описать rollback/restore drill в runbook.
+- [ ] Проверить админ-потоки и cron-флоу на деградацию/повторные запуски.
+
+**DoD:**
+- Есть минимальный набор метрик и понятные алерты.
+- Runbook покрывает rollback/restore и аварийные процедуры.
+- Регламент операционных проверок закреплён.
+
+---
+
+## 4) KPI/метрики готовности
+
+- **Security:**
+  - `0` inline JS handlers в шаблонах;
+  - CSP violations trend стабильно снижается до `0` критичных.
+- **Quality:**
+  - CI обязателен для merge;
+  - unit + integration зелёные на PR.
+- **Reliability:**
+  - нет рассинхронизации DB/FS в негативных сценариях;
+  - install/migrations проходят повторно (idempotent path).
+- **UX/A11y:**
+  - критические сценарии доступны с клавиатуры;
+  - интерактивные controls имеют корректные `aria-label`.
+- **Runtime:**
+  - базовые smoke-флоу без регрессий в двух URL-режимах.
+
+---
+
+## 5) Риски и зависимости
+
+- Внешние CDN/инлайн-паттерны могут тормозить CSP hard-enforce.
+- Переход rate limiter на shared storage требует аккуратной миграции и rollback-плана.
+- Для observability нужен минимум инфраструктурной поддержки (лог-хранилище/метрики).
