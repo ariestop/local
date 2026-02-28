@@ -43,6 +43,16 @@ class PostRepository
         return $this->model->getByUserId($userId);
     }
 
+    public function countByUserId(int $userId): int
+    {
+        return $this->model->countByUserId($userId);
+    }
+
+    public function getByUserIdPaginated(int $userId, int $limit, int $offset): array
+    {
+        return $this->model->getByUserIdPaginated($userId, $limit, $offset);
+    }
+
     public function create(array $data): int
     {
         return $this->model->create($data);

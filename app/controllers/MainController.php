@@ -127,11 +127,16 @@ class MainController extends Controller
     {
         $this->requireAuth();
         $user = $this->getLoggedUser();
-        $posts = $this->postService->getByUserId((int) $user['id']);
-        $postIds = array_column($posts, 'id');
+        $perPage = 50;
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $result = $this->postService->getByUserIdPaginated((int) $user['id'], $perPage, $page);
+        $postIds = array_column($result['posts'], 'id');
         $firstPhotos = $this->postService->getFirstPhotosForPosts($postIds);
         $this->render('main/edit-advert', [
-            'posts' => $posts,
+            'posts' => $result['posts'],
+            'page' => $result['page'],
+            'totalPages' => $result['totalPages'],
+            'total' => $result['total'],
             'firstPhotos' => $firstPhotos,
             'user' => $user,
         ]);

@@ -150,6 +150,33 @@ class Post
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function countByUserId(int $userId): int
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM post WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function getByUserIdPaginated(int $userId, int $limit, int $offset): array
+    {
+        $sql = "SELECT p.id, p.user_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house, p.view_count, p.status, p.expires_at,
+                a.name AS action_name, o.name AS object_name, c.name AS city_name, ar.name AS area_name
+                FROM post p
+                JOIN action a ON p.action_id = a.id
+                JOIN objectsale o ON p.object_id = o.id
+                JOIN city c ON p.city_id = c.id
+                JOIN area ar ON p.area_id = ar.id
+                WHERE p.user_id = ?
+                ORDER BY p.created_at DESC
+                LIMIT ? OFFSET ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+        $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+        $stmt->bindValue(3, $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function update(int $id, int $userId, array $data): bool
     {
         $stmt = $this->db->prepare("UPDATE post SET action_id=?, object_id=?, city_id=?, area_id=?, room=?, m2=?, street=?, phone=?, cost=?, title=?, descr_post=?, new_house=? WHERE id=? AND user_id=?");

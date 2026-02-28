@@ -276,6 +276,22 @@ class PostService
         return $this->postRepo->getByUserId($userId);
     }
 
+    public function getByUserIdPaginated(int $userId, int $perPage, int $page): array
+    {
+        $page = max(1, $page);
+        $offset = ($page - 1) * $perPage;
+        $total = $this->postRepo->countByUserId($userId);
+        $posts = $this->postRepo->getByUserIdPaginated($userId, $perPage, $offset);
+        $totalPages = $total > 0 ? (int) ceil($total / $perPage) : 1;
+
+        return [
+            'posts' => $posts,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
+        ];
+    }
+
     public function getPostsByIds(array $ids): array
     {
         return $this->postRepo->getByIds($ids);

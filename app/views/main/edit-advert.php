@@ -1,8 +1,17 @@
+<?php
+$page = (int) ($page ?? 1);
+$totalPages = (int) ($totalPages ?? 1);
+$total = (int) ($total ?? 0);
+$qs = static fn(array $over = []): string => http_build_query(array_merge($_GET, $over));
+?>
 <div class="mb-4">
     <a href="/" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> К списку</a>
 </div>
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h4 mb-0">Мои объявления</h1>
+    <div>
+        <h1 class="h4 mb-1">Мои объявления</h1>
+        <div class="small text-muted">Всего объявлений: <?= number_format($total, 0, '', ' ') ?></div>
+    </div>
     <a href="/add" class="btn btn-primary">Добавить объявление</a>
 </div>
 
@@ -63,3 +72,25 @@
         </table>
     </div>
 </div>
+
+<?php if ($totalPages > 1): ?>
+<nav class="mt-3 d-flex flex-wrap align-items-center justify-content-center gap-2" aria-label="Пагинация">
+    <ul class="pagination mb-0">
+        <li class="page-item">
+            <a class="page-link" href="?<?= $qs(['page' => 1]) ?>" title="Первая страница">1</a>
+        </li>
+        <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+            <a class="page-link" href="<?= $page > 1 ? '?' . $qs(['page' => $page - 1]) : '#' ?>">‹</a>
+        </li>
+        <li class="page-item disabled"><span class="page-link"><?= $page ?> / <?= $totalPages ?></span></li>
+        <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
+            <a class="page-link" href="<?= $page < $totalPages ? '?' . $qs(['page' => $page + 1]) : '#' ?>">›</a>
+        </li>
+    </ul>
+    <div class="d-flex align-items-center gap-1">
+        <label class="form-label mb-0 small text-muted">Страница:</label>
+        <input type="number" id="pageInput" class="form-control form-control-sm" style="width:70px" min="1" max="<?= $totalPages ?>" value="<?= $page ?>">
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="pageGoBtn">Перейти</button>
+    </div>
+</nav>
+<?php endif; ?>
