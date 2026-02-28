@@ -21,6 +21,7 @@ use App\Services\ImageService;
 use App\Services\MailService;
 use App\Services\MigrationService;
 use App\Services\RateLimiter;
+use App\Services\SqlScriptExecutor;
 use App\Log\LoggerInterface;
 use App\Services\PostService;
 use App\Services\SeoService;
@@ -69,7 +70,8 @@ class Container
             RateLimiter::class => new RateLimiter(),
             AppErrorService::class => new AppErrorService($this->get(PDO::class), $this->get(LoggerInterface::class)),
             AdminReportService::class => new AdminReportService($this->get(PDO::class)),
-            MigrationService::class => new MigrationService($this->get(PDO::class)),
+            SqlScriptExecutor::class => new SqlScriptExecutor(),
+            MigrationService::class => new MigrationService($this->get(PDO::class), $this->get(SqlScriptExecutor::class)),
             AuthService::class => new AuthService($this->get(UserRepository::class), $this->get(MailService::class), $this->config, $this->get(LoggerInterface::class)),
             PostService::class => new PostService(
                 $this->get(PostRepository::class),

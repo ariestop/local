@@ -10,7 +10,10 @@ use Throwable;
 
 class MigrationService
 {
-    public function __construct(private PDO $db) {}
+    public function __construct(
+        private PDO $db,
+        private ?SqlScriptExecutor $sqlExecutor = null
+    ) {}
 
     public function getStatus(): array
     {
@@ -35,51 +38,57 @@ class MigrationService
 
     public function applyNext(): array
     {
-        $this->ensureSchemaMigrations();
-        $this->ensureMigrationRunLog();
-        $files = $this->getMigrationFiles();
-        $applied = $this->getAppliedMap();
+        return $this->withMigrationLock(function (): array {
+            $this->ensureSchemaMigrations();
+            $this->ensureMigrationRunLog();
+            $files = $this->getMigrationFiles();
+            $applied = $this->getAppliedMap();
 
-        foreach ($files as $name => $path) {
-            if (!isset($applied[$name])) {
-                $this->applyFile($name, $path, null);
-                return ['applied' => true, 'name' => $name];
+            foreach ($files as $name => $path) {
+                if (!isset($applied[$name])) {
+                    $this->applyFile($name, $path, null);
+                    return ['applied' => true, 'name' => $name];
+                }
             }
-        }
 
-        return ['applied' => false, 'name' => null];
+            return ['applied' => false, 'name' => null];
+        });
     }
 
     public function applyOne(string $name, ?array $actor = null): void
     {
-        $this->ensureSchemaMigrations();
-        $this->ensureMigrationRunLog();
-        $files = $this->getMigrationFiles();
-        if (!isset($files[$name])) {
-            throw new RuntimeException('Миграция не найдена: ' . $name);
-        }
-        $applied = $this->getAppliedMap();
-        if (isset($applied[$name])) {
-            return;
-        }
-        $this->applyFile($name, $files[$name], $actor);
+        $this->withMigrationLock(function () use ($name, $actor): void {
+            $this->ensureSchemaMigrations();
+            $this->ensureMigrationRunLog();
+            $files = $this->getMigrationFiles();
+            if (!isset($files[$name])) {
+                throw new RuntimeException('Миграция не найдена: ' . $name);
+            }
+            $applied = $this->getAppliedMap();
+            if (isset($applied[$name])) {
+                return;
+            }
+            $this->applyFile($name, $files[$name], $actor);
+        });
     }
 
     public function applyNextByActor(?array $actor = null): array
     {
-        $this->ensureSchemaMigrations();
-        $this->ensureMigrationRunLog();
-        $files = $this->getMigrationFiles();
-        $applied = $this->getAppliedMap();
+        return $this->withMigrationLock(function () use ($actor): array {
+            $this->ensureSchemaMigrations();
+            $this->ensureMigrationRunLog();
+            $files = $this->getMigrationFiles();
+            $applied = $this->getAppliedMap();
 
-        foreach ($files as $name => $path) {
-            if (!isset($applied[$name])) {
-                $this->applyFile($name, $path, $actor);
-                return ['applied' => true, 'name' => $name];
+            foreach ($files as $name => $path) {
+                if (!isset($applied[$name])) {
+                    $this->applyFile($name, $path, $actor);
+                    return ['applied' => true, 'name' => $name];
+                }
             }
-        }
 
-        return ['applied' => false, 'name' => null];
+            return ['applied' => false, 'name' => null];
+        });
     }
 
     public function getRecentRuns(int $limit = 20): array
@@ -202,120 +211,95 @@ class MigrationService
 
     private function executeSqlMigration(string $file): void
     {
-        $sql = file_get_contents($file);
-        if ($sql === false) {
-            throw new RuntimeException('Не удалось прочитать SQL-файл: ' . $file);
-        }
-        foreach ($this->splitSqlStatements($sql) as $stmt) {
-            $query = $this->db->prepare($stmt);
-            $query->execute();
-            do {
-                try {
-                    $query->fetchAll();
-                } catch (Throwable) {
-                    // Для не-SELECT выражений result set отсутствует.
-                }
-            } while ($query->nextRowset());
-            $query->closeCursor();
-        }
+        $this->sqlExecutor()->executeFile($this->db, $file);
     }
 
-    private function splitSqlStatements(string $sql): array
+    public function applyPending(bool $dryRun = false, bool $statusOnly = false, ?callable $onPending = null): array
     {
-        $statements = [];
-        $buffer = '';
-        $len = strlen($sql);
-        $inSingle = false;
-        $inDouble = false;
-        $inBacktick = false;
-        $inLineComment = false;
-        $inBlockComment = false;
+        if (!$dryRun && !$statusOnly) {
+            return $this->withMigrationLock(function () use ($dryRun, $statusOnly, $onPending): array {
+                return $this->applyPendingCore($dryRun, $statusOnly, $onPending);
+            });
+        }
+        return $this->applyPendingCore($dryRun, $statusOnly, $onPending);
+    }
 
-        for ($i = 0; $i < $len; $i++) {
-            $ch = $sql[$i];
-            $next = $i + 1 < $len ? $sql[$i + 1] : '';
-
-            if ($inLineComment) {
-                if ($ch === "\n") {
-                    $inLineComment = false;
-                }
-                continue;
+    private function applyPendingCore(bool $dryRun, bool $statusOnly, ?callable $onPending): array
+    {
+        if (!$this->hasSchemaMigrationsTable()) {
+            if ($dryRun) {
+                return ['applied' => 0, 'skipped' => 0, 'pending' => 0];
             }
-            if ($inBlockComment) {
-                if ($ch === '*' && $next === '/') {
-                    $inBlockComment = false;
-                    $i++;
-                }
-                continue;
-            }
-            if (!$inSingle && !$inDouble && !$inBacktick) {
-                if ($ch === '-' && $next === '-' && ($i + 2 >= $len || ctype_space($sql[$i + 2]))) {
-                    $inLineComment = true;
-                    $i++;
-                    continue;
-                }
-                if ($ch === '#') {
-                    $inLineComment = true;
-                    continue;
-                }
-                if ($ch === '/' && $next === '*') {
-                    if ($i + 2 < $len && $sql[$i + 2] === '!') {
-                        $end = strpos($sql, '*/', $i + 3);
-                        if ($end === false) {
-                            break;
-                        }
-                        $payload = substr($sql, $i + 3, $end - ($i + 3));
-                        $payload = preg_replace('/^\d+\s*/', '', $payload) ?? '';
-                        if ($payload !== '') {
-                            $buffer .= $payload;
-                        }
-                        $i = $end + 1;
-                        continue;
-                    }
-                    $inBlockComment = true;
-                    $i++;
-                    continue;
-                }
-            }
-
-            if ($ch === "'" && !$inDouble && !$inBacktick) {
-                $escaped = $i > 0 && $sql[$i - 1] === '\\';
-                if (!$escaped) {
-                    $inSingle = !$inSingle;
-                }
-                $buffer .= $ch;
-                continue;
-            }
-            if ($ch === '"' && !$inSingle && !$inBacktick) {
-                $escaped = $i > 0 && $sql[$i - 1] === '\\';
-                if (!$escaped) {
-                    $inDouble = !$inDouble;
-                }
-                $buffer .= $ch;
-                continue;
-            }
-            if ($ch === '`' && !$inSingle && !$inDouble) {
-                $inBacktick = !$inBacktick;
-                $buffer .= $ch;
-                continue;
-            }
-            if ($ch === ';' && !$inSingle && !$inDouble && !$inBacktick) {
-                $stmt = trim($buffer);
-                if ($stmt !== '') {
-                    $statements[] = $stmt;
-                }
-                $buffer = '';
-                continue;
-            }
-            $buffer .= $ch;
+            $this->ensureSchemaMigrations();
         }
 
-        $tail = trim($buffer);
-        if ($tail !== '') {
-            $statements[] = $tail;
+        $appliedRows = $this->db->query('SELECT migration FROM schema_migrations')->fetchAll(PDO::FETCH_COLUMN);
+        $appliedMap = array_fill_keys(array_map('strval', $appliedRows), true);
+        $files = $this->getMigrationFiles();
+        $result = ['applied' => 0, 'skipped' => 0, 'pending' => 0];
+
+        foreach ($files as $name => $path) {
+            if (isset($appliedMap[$name])) {
+                $result['skipped']++;
+                continue;
+            }
+            $result['pending']++;
+            if ($statusOnly || $dryRun) {
+                if (is_callable($onPending)) {
+                    $onPending($name, $dryRun);
+                }
+                continue;
+            }
+            $this->ensureMigrationRunLog();
+            $this->applyFile($name, $path, null);
+            $result['applied']++;
         }
 
-        return $statements;
+        return $result;
+    }
+
+    private function hasSchemaMigrationsTable(): bool
+    {
+        $stmt = $this->db->prepare('
+            SELECT COUNT(*)
+            FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+        ');
+        $stmt->execute(['schema_migrations']);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    private function sqlExecutor(): SqlScriptExecutor
+    {
+        if ($this->sqlExecutor === null) {
+            $this->sqlExecutor = new SqlScriptExecutor();
+        }
+        return $this->sqlExecutor;
+    }
+
+    public static function lockNameForDatabase(string $databaseName): string
+    {
+        $normalized = preg_replace('/[^a-zA-Z0-9_]/', '_', $databaseName) ?? 'app';
+        return 'm2_migration_lock_' . substr($normalized, 0, 32);
+    }
+
+    private function withMigrationLock(callable $callback): mixed
+    {
+        $dbName = (string) ($this->db->query('SELECT DATABASE()')->fetchColumn() ?: 'app');
+        $lockName = self::lockNameForDatabase($dbName);
+        $stmt = $this->db->prepare('SELECT GET_LOCK(:name, :timeout)');
+        $stmt->execute([':name' => $lockName, ':timeout' => 0]);
+        $acquired = (int) $stmt->fetchColumn();
+        if ($acquired !== 1) {
+            throw new RuntimeException('Другая операция миграции уже выполняется. Повторите попытку позже.');
+        }
+
+        try {
+            return $callback();
+        } finally {
+            $release = $this->db->prepare('SELECT RELEASE_LOCK(:name)');
+            $release->execute([':name' => $lockName]);
+        }
     }
 }
 

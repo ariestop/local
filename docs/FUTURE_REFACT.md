@@ -35,7 +35,7 @@
    - PHP: `app/helpers.php`, `public_html/index.php`, `app/services/SeoService.php`, `app/controllers/SeoController.php`,
    - JS: `public_html/assets/api.js`,
    - цель: единый resolver режима URL и единые правила построения ссылок.
-6. Убрать дубли миграционной логики между `install.php` и `app/services/MigrationService.php` (оценка: **L**):
+6. ✅ Убрать дубли миграционной логики между `install.php` и `app/services/MigrationService.php` (оценка: **L**, выполнено):
    - общий SQL parser/executor,
    - общий preflight и защита от параллельного запуска.
 

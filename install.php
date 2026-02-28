@@ -120,6 +120,40 @@ function preflightDumpPath(string $dumpPath): void
     out('INFO', 'DB dump file found.');
 }
 
+function installSqlExecutor(): App\Services\SqlScriptExecutor
+{
+    static $executor = null;
+    if ($executor instanceof App\Services\SqlScriptExecutor) {
+        return $executor;
+    }
+    $executor = new App\Services\SqlScriptExecutor();
+    return $executor;
+}
+
+function installMigrationService(PDO $pdo): App\Services\MigrationService
+{
+    return new App\Services\MigrationService($pdo, installSqlExecutor());
+}
+
+function withInstallLock(PDO $pdo, callable $callback): mixed
+{
+    $dbName = (string) ($pdo->query('SELECT DATABASE()')->fetchColumn() ?: 'app');
+    $lockName = App\Services\MigrationService::lockNameForDatabase($dbName);
+    $acquire = $pdo->prepare('SELECT GET_LOCK(:name, :timeout)');
+    $acquire->execute([':name' => $lockName, ':timeout' => 0]);
+    $acquired = (int) $acquire->fetchColumn();
+    if ($acquired !== 1) {
+        throw new RuntimeException('Another install/migration process is already running for this database.');
+    }
+
+    try {
+        return $callback();
+    } finally {
+        $release = $pdo->prepare('SELECT RELEASE_LOCK(:name)');
+        $release->execute([':name' => $lockName]);
+    }
+}
+
 function mysqlBufferedQueryAttr(): ?int
 {
     if (defined('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')) {
@@ -275,127 +309,7 @@ function looksLikeLegacyInstalledDatabase(PDO $pdo): bool
 
 function splitSqlStatements(string $sql): array
 {
-    $statements = [];
-    $buffer = '';
-    $len = strlen($sql);
-    $inSingle = false;
-    $inDouble = false;
-    $inBacktick = false;
-    $inLineComment = false;
-    $inBlockComment = false;
-
-    for ($i = 0; $i < $len; $i++) {
-        $ch = $sql[$i];
-        $next = $i + 1 < $len ? $sql[$i + 1] : '';
-
-        if ($inLineComment) {
-            if ($ch === "\n") {
-                $inLineComment = false;
-            }
-            continue;
-        }
-
-        if ($inBlockComment) {
-            if ($ch === '*' && $next === '/') {
-                $inBlockComment = false;
-                $i++;
-            }
-            continue;
-        }
-
-        if (!$inSingle && !$inDouble && !$inBacktick) {
-            if ($ch === '-' && $next === '-' && ($i + 2 >= $len || ctype_space($sql[$i + 2]))) {
-                $inLineComment = true;
-                $i++;
-                continue;
-            }
-            if ($ch === '#') {
-                $inLineComment = true;
-                continue;
-            }
-            if ($ch === '/' && $next === '*') {
-                if ($i + 2 < $len && $sql[$i + 2] === '!') {
-                    $end = strpos($sql, '*/', $i + 3);
-                    if ($end === false) {
-                        break;
-                    }
-                    $payload = substr($sql, $i + 3, $end - ($i + 3));
-                    $payload = preg_replace('/^\d+\s*/', '', $payload) ?? '';
-                    if ($payload !== '') {
-                        $buffer .= $payload;
-                    }
-                    $i = $end + 1;
-                    continue;
-                }
-                $inBlockComment = true;
-                $i++;
-                continue;
-            }
-        }
-
-        if ($ch === "'" && !$inDouble && !$inBacktick) {
-            $escaped = $i > 0 && $sql[$i - 1] === '\\';
-            if (!$escaped) {
-                $inSingle = !$inSingle;
-            }
-            $buffer .= $ch;
-            continue;
-        }
-
-        if ($ch === '"' && !$inSingle && !$inBacktick) {
-            $escaped = $i > 0 && $sql[$i - 1] === '\\';
-            if (!$escaped) {
-                $inDouble = !$inDouble;
-            }
-            $buffer .= $ch;
-            continue;
-        }
-
-        if ($ch === '`' && !$inSingle && !$inDouble) {
-            $inBacktick = !$inBacktick;
-            $buffer .= $ch;
-            continue;
-        }
-
-        if ($ch === ';' && !$inSingle && !$inDouble && !$inBacktick) {
-            $stmt = trim($buffer);
-            if ($stmt !== '') {
-                $statements[] = $stmt;
-            }
-            $buffer = '';
-            continue;
-        }
-
-        $buffer .= $ch;
-    }
-
-    $tail = trim($buffer);
-    if ($tail !== '') {
-        $statements[] = $tail;
-    }
-
-    return $statements;
-}
-
-function executeSqlFile(PDO $pdo, string $file): void
-{
-    $sql = file_get_contents($file);
-    if ($sql === false) {
-        throw new RuntimeException("Failed to read SQL migration: {$file}");
-    }
-    $statements = splitSqlStatements($sql);
-    foreach ($statements as $stmt) {
-        $query = $pdo->prepare($stmt);
-        $query->execute();
-        do {
-            try {
-                $query->fetchAll();
-            } catch (Throwable) {
-                // No result set for this statement/rowset.
-            }
-        } while ($query->nextRowset());
-        $query->closeCursor();
-    }
+    return installSqlExecutor()->splitStatements($sql);
 }
 
 function shouldSkipBaselineStatement(string $stmt): bool
@@ -408,18 +322,6 @@ function shouldSkipBaselineStatement(string $stmt): bool
         return true;
     }
     return false;
-}
-
-function executePhpMigration(PDO $pdo, string $file): void
-{
-    $migration = require $file;
-    if (is_callable($migration)) {
-        $migration($pdo);
-        return;
-    }
-
-    // Legacy compatibility: old migrations rely on $pdo in local scope.
-    require $file;
 }
 
 function importBaselineDump(PDO $pdo, string $dumpPath, bool $dryRun): void
@@ -440,16 +342,7 @@ function importBaselineDump(PDO $pdo, string $dumpPath, bool $dryRun): void
         if (shouldSkipBaselineStatement($stmt)) {
             continue;
         }
-        $query = $pdo->prepare($stmt);
-        $query->execute();
-        do {
-            try {
-                $query->fetchAll();
-            } catch (Throwable) {
-                // No result set for this statement/rowset.
-            }
-        } while ($query->nextRowset());
-        $query->closeCursor();
+        installSqlExecutor()->executeStatement($pdo, $stmt);
     }
     out('INFO', 'Baseline dump imported.');
 }
@@ -562,60 +455,16 @@ function applyMigrations(PDO $pdo, string $migrationsDir, bool $dryRun, bool $st
         out('WARN', 'Migrations directory not found, skipping.');
         return ['applied' => 0, 'skipped' => 0, 'pending' => 0];
     }
-
-    ensureSchemaMigrations($pdo, $dryRun);
     if ($dryRun && !tableExists($pdo, 'schema_migrations')) {
         out('PLAN', 'Pending migrations cannot be resolved precisely in dry-run without DB metadata.');
         return ['applied' => 0, 'skipped' => 0, 'pending' => 0];
     }
 
-    $appliedRows = $pdo->query('SELECT migration FROM schema_migrations')->fetchAll(PDO::FETCH_COLUMN);
-    $appliedMap = array_fill_keys(array_map('strval', $appliedRows), true);
-
-    $files = glob($migrationsDir . '/*.{sql,php}', GLOB_BRACE) ?: [];
-    usort($files, 'strnatcasecmp');
-
-    $result = ['applied' => 0, 'skipped' => 0, 'pending' => 0];
-
-    foreach ($files as $file) {
-        $name = basename($file);
-        if (isset($appliedMap[$name])) {
-            $result['skipped']++;
-            continue;
-        }
-        $result['pending']++;
-        if ($statusOnly) {
-            out('INFO', "Pending migration: {$name}");
-            continue;
-        }
-        if ($dryRun) {
-            out('PLAN', "Would apply migration: {$name}");
-            continue;
-        }
-
-        out('INFO', "Applying migration: {$name}");
-        try {
-            $pdo->beginTransaction();
-            if (str_ends_with($name, '.sql')) {
-                executeSqlFile($pdo, $file);
-            } else {
-                executePhpMigration($pdo, $file);
-            }
-            $mark = $pdo->prepare('INSERT INTO schema_migrations (migration) VALUES (?)');
-            $mark->execute([$name]);
-            if ($pdo->inTransaction()) {
-                $pdo->commit();
-            }
-            $result['applied']++;
-        } catch (Throwable $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            throw new RuntimeException("Migration failed [{$name}]: " . $e->getMessage(), 0, $e);
-        }
-    }
-
-    return $result;
+    $effectiveDryRun = $dryRun && !$statusOnly;
+    $service = installMigrationService($pdo);
+    return $service->applyPending($effectiveDryRun, $statusOnly, static function (string $name, bool $dry): void {
+        out($dry ? 'PLAN' : 'INFO', ($dry ? 'Would apply migration: ' : 'Pending migration: ') . $name);
+    });
 }
 
 function parseOptions(array $argv): array
@@ -639,6 +488,8 @@ function parseOptions(array $argv): array
 function loadAppConfig(string $root): array
 {
     require $root . '/app/load_env.php';
+    require_once $root . '/app/services/SqlScriptExecutor.php';
+    require_once $root . '/app/services/MigrationService.php';
     /** @var array $config */
     $config = require $root . '/app/config/config.php';
     return $config;
@@ -672,33 +523,50 @@ function runInstaller(array $opts, string $root): int
 
         $pdo = connectDatabase($db);
         $readonlyMode = $dryRun || $statusOnly;
-        ensureInstallState($pdo, $readonlyMode);
-        ensureSchemaMigrations($pdo, $readonlyMode);
-
-        $state = getInstallState($pdo);
-        $domainTableCount = countDomainTables($pdo);
-        $baselineImported = !empty($state['baseline_imported_at']);
-
-        if ($statusOnly) {
-            printStatus($db['dbname'], $state, $baselineImported, $domainTableCount);
-        }
-
-        $bootstrapStatus = handleBootstrapPhase(
+        $runInstallFlow = function () use (
             $pdo,
-            $db['dbname'],
+            $db,
             $dumpPath,
-            $domainTableCount,
-            $baselineImported,
+            $migrationsDir,
+            $readonlyMode,
             $statusOnly,
             $forceBootstrap,
             $dryRun
-        );
-        if ($bootstrapStatus !== EXIT_OK) {
-            return $bootstrapStatus;
-        }
+        ): int {
+            ensureInstallState($pdo, $readonlyMode);
+            ensureSchemaMigrations($pdo, $readonlyMode);
 
-        $migrationStats = applyMigrations($pdo, $migrationsDir, $readonlyMode, $statusOnly);
-        printMigrationSummary($migrationStats);
+            $state = getInstallState($pdo);
+            $domainTableCount = countDomainTables($pdo);
+            $baselineImported = !empty($state['baseline_imported_at']);
+
+            if ($statusOnly) {
+                printStatus($db['dbname'], $state, $baselineImported, $domainTableCount);
+            }
+
+            $bootstrapStatus = handleBootstrapPhase(
+                $pdo,
+                $db['dbname'],
+                $dumpPath,
+                $domainTableCount,
+                $baselineImported,
+                $statusOnly,
+                $forceBootstrap,
+                $dryRun
+            );
+            if ($bootstrapStatus !== EXIT_OK) {
+                return $bootstrapStatus;
+            }
+
+            $migrationStats = applyMigrations($pdo, $migrationsDir, $readonlyMode, $statusOnly);
+            printMigrationSummary($migrationStats);
+            return EXIT_OK;
+        };
+
+        $flowStatus = $readonlyMode ? $runInstallFlow() : withInstallLock($pdo, $runInstallFlow);
+        if ($flowStatus !== EXIT_OK) {
+            return $flowStatus;
+        }
 
         out('INFO', '=== DB install/update complete ===');
         return EXIT_OK;
