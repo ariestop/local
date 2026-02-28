@@ -92,6 +92,17 @@ MVC-сайт на PHP 8.5+, Bootstrap 5, MySQL 8.0. Аналог m2saratov.ru. �
   vendor/bin/phpunit tests/SeoServiceTest.php
   ```
 
+## CI и quality gates
+
+- В проекте включён CI workflow: `.github/workflows/ci.yml`.
+- На каждом `pull_request` и `push` в `main` выполняются обязательные проверки:
+  - `composer validate --strict`
+  - `composer install --no-interaction --prefer-dist`
+  - `composer audit`
+  - `composer test:unit`
+  - `composer test:integration`
+- Рекомендуемая настройка репозитория: branch protection для `main` с обязательным статусом job `Quality Gates` (без зелёного статуса merge запрещён).
+
 ## Auth migration flag
 
 - `AUTH_ALLOW_LEGACY_PASSWORD=1` — временно разрешает вход legacy-пользователей (plaintext/md5) с автоматическим переводом на `password_hash` при успешном логине.

@@ -60,8 +60,12 @@ Endpoint-минимум:
 
 ## 5) Автотесты и quality gates
 
-- Перед merge обязательно выполнить:
+- CI workflow: `.github/workflows/ci.yml` (job `Quality Gates`) запускается на `pull_request` и `push` в `main`.
+- В CI обязательно выполняются:
+  - `composer validate --strict`
+  - `composer install --no-interaction --prefer-dist`
+  - `composer audit`
   - `composer test:unit`
   - `composer test:integration`
-- Если любой тест падает, релиз блокируется до исправления регрессии.
+- Если любой шаг падает, merge/release блокируется до устранения причины.
 - Для нового багфикса добавляется regression-тест в соответствующий suite (`unit` или `integration`).

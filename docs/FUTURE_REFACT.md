@@ -45,7 +45,7 @@
    - вынести inline JS/CSS из `app/views/*`.
 8. Улучшить UX/A11y (оценка: **M**):
    - `aria-label`, корректные `alt`, keyboard-friendly взаимодействия.
-9. Ввести базовый CI и quality gates (оценка: **S**):
+9. ✅ Ввести базовый CI и quality gates (оценка: **S**, выполнено):
    - `composer validate/install/audit`,
    - `phpunit` как обязательная проверка.
 10. Расширить тесты критического контура (оценка: **M**):
