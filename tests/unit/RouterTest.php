@@ -75,6 +75,20 @@ final class RouterTest extends TestCase
 
         $this->assertSame([], RouterTestProbeController::$calls);
     }
+
+    public function testFrontControllerPrefixedUriIsDispatchedToSameRoute(): void
+    {
+        $router = (new Router())->get('/detail/{id}', [RouterTestProbeController::class, 'ping']);
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/index.php/detail/123';
+        $_SERVER['SCRIPT_NAME'] = '/index.php';
+
+        ob_start();
+        $router->dispatch();
+        ob_get_clean();
+
+        $this->assertSame([['action' => 'ping', 'args' => ['123']]], RouterTestProbeController::$calls);
+    }
 }
 
 final class RouterTestProbeController

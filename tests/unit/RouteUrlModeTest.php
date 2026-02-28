@@ -45,4 +45,15 @@ final class RouteUrlModeTest extends TestCase
 
         $this->assertSame('http://localhost:8888/detail/55', absolute_url('/detail/55'));
     }
+
+    public function testAbsoluteUrlSupportsQueryParametersInBothModes(): void
+    {
+        $_ENV['APP_USE_FRONT_CONTROLLER_URLS'] = '1';
+        $_SERVER['SCRIPT_NAME'] = '/index.php';
+
+        $this->assertSame(
+            'https://example.test/index.php?page=2&sort=price_desc',
+            absolute_url('/', ['page' => '2', 'sort' => 'price_desc'], 'https://example.test')
+        );
+    }
 }

@@ -49,6 +49,40 @@ final class ApiControllerContractTest extends TestCase
         $this->assertArrayHasKey('added', $response['json']);
     }
 
+    public function testCheckEmailSuccessReturnsExistsField(): void
+    {
+        $userRepo = $this->createMock(UserRepository::class);
+        $userRepo->expects($this->once())
+            ->method('emailExists')
+            ->with('exists@example.test')
+            ->willReturn(true);
+
+        $controller = $this->makeController(
+            ['allowed' => true, 'retry_after' => 0],
+            userRepository: $userRepo
+        );
+        $_GET['email'] = 'exists@example.test';
+
+        $response = $this->invokeAndDecode(fn() => $controller->checkEmail());
+
+        $this->assertTrue((bool) ($response['json']['success'] ?? false));
+        $this->assertTrue((bool) ($response['json']['exists'] ?? false));
+    }
+
+    public function testToggleFavoriteWithoutPostIdReturns400Contract(): void
+    {
+        $_SESSION['user'] = ['id' => 7, 'email' => 'u@example.test'];
+        $controller = $this->makeController(['allowed' => true, 'retry_after' => 0]);
+        $_POST = [
+            'csrf_token' => csrf_token(),
+        ];
+
+        $response = $this->invokeAndDecode(fn() => $controller->toggleFavorite());
+
+        $this->assertFalse((bool) ($response['json']['success'] ?? true));
+        $this->assertSame(400, $response['json']['code'] ?? null);
+    }
+
     /**
      * @return array{json:array<string,mixed>,raw:string}
      */
@@ -68,10 +102,14 @@ final class ApiControllerContractTest extends TestCase
     /**
      * @param array{allowed:bool,retry_after:int} $rateResult
      */
-    private function makeController(array $rateResult): ApiController
+    private function makeController(
+        array $rateResult,
+        ?UserRepository $userRepository = null,
+        ?FavoriteRepository $favoriteRepository = null
+    ): ApiController
     {
-        $userRepo = $this->createMock(UserRepository::class);
-        $favoriteRepo = $this->createMock(FavoriteRepository::class);
+        $userRepo = $userRepository ?? $this->createMock(UserRepository::class);
+        $favoriteRepo = $favoriteRepository ?? $this->createMock(FavoriteRepository::class);
         $rateLimiter = $this->createMock(RateLimiter::class);
         $errorService = $this->createMock(AppErrorService::class);
         $rateLimiter->method('hit')->willReturn($rateResult);

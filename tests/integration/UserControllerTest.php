@@ -78,6 +78,73 @@ final class UserControllerTest extends TestCase
         $this->assertSame(42, $response['json']['retry_after'] ?? null);
     }
 
+    public function testRegisterSuccessWithoutEmailConfirmationCreatesSessionAndClearsCaptcha(): void
+    {
+        $auth = $this->createMock(AuthService::class);
+        $rateLimiter = $this->createMock(RateLimiter::class);
+        $rateLimiter->method('hit')->willReturn(['allowed' => true, 'retry_after' => 0]);
+        $auth->method('register')->willReturn([
+            'success' => true,
+            'email_confirm_required' => false,
+            'user' => ['id' => 9, 'email' => 'new@example.test', 'name' => 'New'],
+        ]);
+
+        $controller = new UserController($this->makeContainer($auth, $rateLimiter));
+        $_SESSION['captcha'] = 'ABCDE';
+        $_POST = [
+            'email' => 'new@example.test',
+            'password' => 'secret123',
+            'name' => 'New',
+            'captcha' => 'ABCDE',
+            'csrf_token' => $this->issueCsrfToken(),
+        ];
+        $sessionBefore = session_id();
+
+        $response = $this->invokeAndDecode(fn() => $controller->register());
+        $sessionAfter = session_id();
+
+        $this->assertTrue((bool) ($response['json']['success'] ?? false));
+        $this->assertSame(9, $_SESSION['user']['id'] ?? null);
+        $this->assertNotSame($sessionBefore, $sessionAfter);
+        $this->assertArrayNotHasKey('captcha', $_SESSION);
+    }
+
+    public function testForgotPasswordRateLimitReturns429AndRetryAfter(): void
+    {
+        $auth = $this->createMock(AuthService::class);
+        $rateLimiter = $this->createMock(RateLimiter::class);
+        $rateLimiter->method('hit')->willReturn(['allowed' => false, 'retry_after' => 55]);
+        $controller = new UserController($this->makeContainer($auth, $rateLimiter));
+        $_POST = [
+            'email' => 'user@example.test',
+            'csrf_token' => $this->issueCsrfToken(),
+        ];
+
+        $response = $this->invokeAndDecode(fn() => $controller->forgotPasswordSubmit());
+
+        $this->assertFalse((bool) ($response['json']['success'] ?? true));
+        $this->assertSame(429, $response['json']['code'] ?? null);
+        $this->assertSame(55, $response['json']['retry_after'] ?? null);
+    }
+
+    public function testResetPasswordSubmitMismatchedPasswordsReturns400Contract(): void
+    {
+        $auth = $this->createMock(AuthService::class);
+        $rateLimiter = $this->createMock(RateLimiter::class);
+        $controller = new UserController($this->makeContainer($auth, $rateLimiter));
+        $_POST = [
+            'token' => 'tkn',
+            'password' => 'a',
+            'password2' => 'b',
+            'csrf_token' => $this->issueCsrfToken(),
+        ];
+
+        $response = $this->invokeAndDecode(fn() => $controller->resetPasswordSubmit());
+
+        $this->assertFalse((bool) ($response['json']['success'] ?? true));
+        $this->assertSame(400, $response['json']['code'] ?? null);
+    }
+
     private function issueCsrfToken(): string
     {
         return csrf_token();

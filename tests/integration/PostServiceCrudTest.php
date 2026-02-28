@@ -123,6 +123,83 @@ final class PostServiceCrudTest extends TestCase
         $this->assertSame(403, $result['code'] ?? null);
     }
 
+    public function testCreateRollbackOnPromoteFailureCompensatesPostAndPhotos(): void
+    {
+        $postRepo = $this->createMock(PostRepository::class);
+        $photoRepo = $this->createMock(PostPhotoRepository::class);
+        $refRepo = $this->createMock(ReferenceRepository::class);
+        $imageService = $this->createMock(ImageService::class);
+        $mailService = $this->createMock(MailService::class);
+        $db = new \PDO('sqlite::memory:');
+
+        $postRepo->method('create')->willReturn(222);
+        $imageService->method('stageUpload')->willReturn([
+            'staging_dir' => '/tmp/stage_fail',
+            'photos' => [
+                ['filename' => 'x.jpg', 'sort_order' => 0],
+            ],
+        ]);
+        $photoRepo->expects($this->once())->method('addBatch')->with(222, [['filename' => 'x.jpg', 'sort_order' => 0]]);
+        $imageService->expects($this->once())
+            ->method('promoteStaged')
+            ->with('/tmp/stage_fail', 7, 222)
+            ->willThrowException(new \RuntimeException('promote failed'));
+        $imageService->expects($this->once())->method('cleanupStaged')->with('/tmp/stage_fail');
+        $photoRepo->expects($this->once())->method('deleteByFilename')->with(222, 'x.jpg');
+        $photoRepo->expects($this->once())->method('deleteByPostId')->with(222);
+        $postRepo->expects($this->once())->method('hardDelete')->with(222);
+        $imageService->expects($this->once())->method('deletePostFolder')->with(7, 222);
+
+        $service = new PostService(
+            $postRepo,
+            $photoRepo,
+            $refRepo,
+            $imageService,
+            $mailService,
+            $db
+        );
+
+        $result = $service->create($this->validPostInput(), $this->validFilesPayload(), 7);
+
+        $this->assertFalse((bool) ($result['success'] ?? true));
+        $this->assertSame(500, $result['code'] ?? null);
+    }
+
+    public function testUpdateDeletesMarkedPhotosAfterCommit(): void
+    {
+        $postRepo = $this->createMock(PostRepository::class);
+        $photoRepo = $this->createMock(PostPhotoRepository::class);
+        $refRepo = $this->createMock(ReferenceRepository::class);
+        $imageService = $this->createMock(ImageService::class);
+        $mailService = $this->createMock(MailService::class);
+        $db = new \PDO('sqlite::memory:');
+
+        $postRepo->method('getById')->willReturn(['id' => 8, 'user_id' => 7]);
+        $postRepo->method('update')->willReturn(true);
+        $photoRepo->method('countByPostId')->willReturn(2);
+        $photoRepo->expects($this->once())->method('deleteByFilename')->with(8, 'old.jpg');
+        $postRepo->expects($this->once())->method('update');
+        $imageService->expects($this->once())->method('deletePhoto')->with(7, 8, 'old.jpg');
+        $imageService->expects($this->never())->method('stageUpload');
+
+        $service = new PostService(
+            $postRepo,
+            $photoRepo,
+            $refRepo,
+            $imageService,
+            $mailService,
+            $db
+        );
+
+        $input = $this->validPostInput();
+        $input['delete_photos'] = 'old.jpg';
+        $input['photo_order'] = '';
+        $result = $service->update(8, $input, [], 7);
+
+        $this->assertTrue((bool) ($result['success'] ?? false));
+        $this->assertSame(8, $result['id'] ?? null);
+    }
+
     /**
      * @return array<string,mixed>
      */
