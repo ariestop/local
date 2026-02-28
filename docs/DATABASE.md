@@ -35,6 +35,13 @@
 | descr_post | text | Описание |
 | client_ip | int UNSIGNED | |
 | new_house | tinyint | 0/1 |
+| status | enum('active','archived') | Статус объявления |
+| published_at | datetime | Дата публикации |
+| expires_at | datetime | Дата истечения (по умолчанию +30 дней при создании) |
+| archived_at | datetime NULL | Когда перенесено в архив |
+| archived_by_user_id | int UNSIGNED NULL | Кто архивировал |
+| archive_reason | enum('manual_owner','manual_admin','expired') NULL | Причина архивации |
+| expiry_notified_at | datetime NULL | Когда отправлено письмо о завершении срока |
 
 ### action
 
@@ -147,6 +154,7 @@ post 1 — N post_photo
 user N — N post (через user_favorite)
 post 1 — N post_view_event
 user 1 — N app_error_event
+user 1 — N post (archived_by_user_id)
 ```
 
 ## Инварианты целостности
@@ -154,3 +162,4 @@ user 1 — N app_error_event
 - `post_photo.post_id` ссылается на `post.id`, удаление объявления удаляет все фото (`ON DELETE CASCADE`).
 - `user_favorite.user_id` и `user_favorite.post_id` ссылаются на `user.id` и `post.id`, удаление пользователя/объявления удаляет соответствующие строки избранного.
 - Перед добавлением FK в миграциях выполняется очистка orphan-строк.
+- В публичной выдаче используются только объявления `status='active'`.

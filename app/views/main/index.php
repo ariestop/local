@@ -9,6 +9,7 @@ $cities = $cities ?? [];
 $popularPosts = $popularPosts ?? [];
 $activity = $activity ?? [];
 $firstPhotos = $firstPhotos ?? [];
+$isAdmin = (bool) ($isAdmin ?? false);
 $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort], $over));
 ?>
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
@@ -119,6 +120,12 @@ $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort]
                         <label class="form-label small mb-0">Цена до</label>
                         <input type="number" name="price_max" class="form-control form-control-sm" placeholder="∞" value="<?= htmlspecialchars($filters['price_max'] ?? '') ?>">
                     </div>
+                    <?php if ($isAdmin): ?>
+                    <div class="col-md-1 col-4">
+                        <label class="form-label small mb-0">ID</label>
+                        <input type="number" name="post_id" class="form-control form-control-sm" placeholder="ID" value="<?= htmlspecialchars((string)($filters['post_id'] ?? '')) ?>">
+                    </div>
+                    <?php endif; ?>
                     <div class="col-md-2 col-6">
                         <label class="form-label small mb-0">Сортировка</label>
                         <select name="sort" class="form-select form-select-sm">
@@ -180,6 +187,11 @@ $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort]
                                 <button type="button" class="btn btn-sm btn-favorite <?= in_array((int)$p['id'], $favoriteIds ?? []) ? 'btn-danger' : 'btn-outline-secondary' ?>" data-id="<?= (int)$p['id'] ?>" title="<?= in_array((int)$p['id'], $favoriteIds ?? []) ? 'Убрать из избранного' : 'В избранное' ?>">
                                     <i class="bi bi-heart<?= in_array((int)$p['id'], $favoriteIds ?? []) ? '-fill' : '' ?>"></i>
                                 </button>
+                                <?php if ($isAdmin): ?>
+                                <button type="button" class="btn btn-sm btn-outline-warning btn-admin-post-action" data-id="<?= (int)$p['id'] ?>" title="Действия с объявлением">
+                                    <i class="bi bi-gear"></i>
+                                </button>
+                                <?php endif; ?>
                                 </div>
                             </td>
                             <?php endif; ?>
@@ -212,4 +224,25 @@ $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort]
         <?php endif; ?>
     </div>
  </div>
+
+<?php if ($isAdmin): ?>
+<div class="modal fade" id="adminPostActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Действие с объявлением</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Выберите действие для объявления <strong id="adminPostActionIdLabel">#0</strong>.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-outline-warning" id="adminArchiveBtn">В архив</button>
+                <button type="button" class="btn btn-danger" id="adminHardDeleteBtn">Удалить с сервера</button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 

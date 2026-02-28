@@ -42,4 +42,16 @@ class MailService
             "<p>Ссылка действительна 1 час.</p>";
         return $this->send($email, $subject, $body);
     }
+
+    public function sendPostExpiredEmail(string $email, string $name, int $postId, string $title): bool
+    {
+        $manageUrl = rtrim($this->appUrl, '/') . '/edit-advert';
+        $subject = 'Срок публикации объявления завершён';
+        $safeTitle = htmlspecialchars($title);
+        $body = "<h2>Здравствуйте, " . htmlspecialchars($name) . "!</h2>" .
+            "<p>Срок размещения объявления <strong>#{$postId}</strong> ({$safeTitle}) завершён.</p>" .
+            "<p>Объявление перенесено в архив. Вы можете восстановить его в личной панели:</p>" .
+            "<p><a href=\"{$manageUrl}\">{$manageUrl}</a></p>";
+        return $this->send($email, $subject, $body);
+    }
 }

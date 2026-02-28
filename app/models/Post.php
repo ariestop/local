@@ -30,6 +30,22 @@ class Post
     {
         $conds = [];
         $params = [];
+        $includeArchived = !empty($filters['include_archived']);
+        $status = (string) ($filters['status'] ?? '');
+        if (!$includeArchived) {
+            if ($status === 'archived') {
+                $conds[] = "p.status = 'archived'";
+            } else {
+                $conds[] = "p.status = 'active'";
+            }
+        } elseif (in_array($status, ['active', 'archived'], true)) {
+            $conds[] = 'p.status = ?';
+            $params[] = $status;
+        }
+        if (!empty($filters['post_id'])) {
+            $conds[] = 'p.id = ?';
+            $params[] = (int) $filters['post_id'];
+        }
         if (!empty($filters['city_id'])) {
             $conds[] = 'p.city_id = ?';
             $params[] = (int) $filters['city_id'];
@@ -95,7 +111,7 @@ class Post
         return $row ?: null;
     }
 
-    public function getByIds(array $ids): array
+    public function getByIds(array $ids, bool $includeArchived = false): array
     {
         if (empty($ids)) return [];
         $ids = array_map('intval', $ids);
@@ -107,7 +123,11 @@ class Post
                 JOIN objectsale o ON p.object_id = o.id
                 JOIN city c ON p.city_id = c.id
                 JOIN area ar ON p.area_id = ar.id
-                WHERE p.id IN ($placeholders)
+                WHERE p.id IN ($placeholders)";
+        if (!$includeArchived) {
+            $sql .= " AND p.status = 'active'";
+        }
+        $sql .= "
                 ORDER BY FIELD(p.id, " . implode(',', $ids) . ")";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($ids);
@@ -116,7 +136,7 @@ class Post
 
     public function getByUserId(int $userId): array
     {
-        $sql = "SELECT p.id, p.user_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house, p.view_count,
+        $sql = "SELECT p.id, p.user_id, p.created_at, p.room, p.m2, p.street, p.phone, p.cost, p.title, p.descr_post, p.new_house, p.view_count, p.status, p.expires_at,
                 a.name AS action_name, o.name AS object_name, c.name AS city_name, ar.name AS area_name
                 FROM post p
                 JOIN action a ON p.action_id = a.id
@@ -153,8 +173,8 @@ class Post
 
     public function create(array $data): int
     {
-        $sql = "INSERT INTO post (user_id, action_id, object_id, city_id, area_id, room, m2, street, phone, cost, title, descr_post, client_ip, new_house)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO post (user_id, action_id, object_id, city_id, area_id, room, m2, street, phone, cost, title, descr_post, client_ip, new_house, status, published_at, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))";
         $stmt = $this->db->prepare($sql);
         $ip = ip2long($_SERVER['REMOTE_ADDR'] ?? '0') ?: 0;
         $stmt->execute([
@@ -180,6 +200,92 @@ class Post
     {
         $stmt = $this->db->prepare("DELETE FROM post WHERE id = ? AND user_id = ?");
         return $stmt->execute([$id, $userId]);
+    }
+
+    public function archive(int $id, int $actorUserId, string $reason): bool
+    {
+        $stmt = $this->db->prepare("
+            UPDATE post
+            SET status = 'archived',
+                archived_at = NOW(),
+                archived_by_user_id = ?,
+                archive_reason = ?
+            WHERE id = ? AND status <> 'archived'
+        ");
+        return $stmt->execute([$actorUserId, $reason, $id]);
+    }
+
+    public function restore(int $id): bool
+    {
+        $stmt = $this->db->prepare("
+            UPDATE post
+            SET status = 'active',
+                archived_at = NULL,
+                archived_by_user_id = NULL,
+                archive_reason = NULL,
+                expires_at = DATE_ADD(NOW(), INTERVAL 30 DAY),
+                expiry_notified_at = NULL
+            WHERE id = ? AND status = 'archived'
+        ");
+        return $stmt->execute([$id]);
+    }
+
+    public function hardDelete(int $id): bool
+    {
+        $stmt = $this->db->prepare("DELETE FROM post WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+
+    public function getExpiredActiveForProcessing(int $limit = 100): array
+    {
+        $limit = max(1, min(500, $limit));
+        $sql = "
+            SELECT p.id, p.user_id, p.title, p.expiry_notified_at, u.email, u.name
+            FROM post p
+            JOIN user u ON u.id = p.user_id
+            WHERE p.status = 'active'
+              AND p.expires_at <= NOW()
+            ORDER BY p.expires_at ASC
+            LIMIT ?
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function countExpiredActiveForProcessing(): int
+    {
+        $stmt = $this->db->query("
+            SELECT COUNT(*)
+            FROM post
+            WHERE status = 'active'
+              AND expires_at <= NOW()
+        ");
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function markExpiryNotified(int $postId): void
+    {
+        $stmt = $this->db->prepare("UPDATE post SET expiry_notified_at = NOW() WHERE id = ?");
+        $stmt->execute([$postId]);
+    }
+
+    public function getExpiryAutomationTotals(): array
+    {
+        $stmt = $this->db->query("
+            SELECT
+                SUM(CASE WHEN status = 'archived' AND archive_reason = 'expired' THEN 1 ELSE 0 END) AS archived_total,
+                SUM(CASE WHEN archive_reason = 'expired' AND expiry_notified_at IS NOT NULL THEN 1 ELSE 0 END) AS notified_total
+            FROM post
+        ");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        return [
+            'archived_total' => (int) ($row['archived_total'] ?? 0),
+            'notified_total' => (int) ($row['notified_total'] ?? 0),
+        ];
     }
 
     public function incrementViewCount(int $postId): void

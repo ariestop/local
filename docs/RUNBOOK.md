@@ -18,15 +18,19 @@
 2. Обновить код.
 3. Запустить миграции (`php install.php`).
    - Если установка уже выполнялась ранее, baseline-дамп повторно не импортируется; применяются только pending-миграции.
-4. Выполнить smoke-check на production.
-5. Подписать go/no-go.
+4. Запустить cron-задачу автоархивации объявлений:
+   - `php cron.php expire-posts`
+   - Рекомендуется ежедневный запуск по расписанию (Task Scheduler/cron).
+5. Выполнить smoke-check на production.
+6. Подписать go/no-go.
 
 ## Stabilization window (60 минут)
 
 - Мониторинг:
   - ошибки 5xx;
   - скорость ответов критичных endpoint;
-  - успешность login/add/edit/delete.
+  - успешность login/add/edit/archive/restore;
+  - успешность cron-задачи `expire-posts` и почтовых уведомлений.
 - Если появляются критичные ошибки, запускаем rollback.
 
 ## Rollback trigger

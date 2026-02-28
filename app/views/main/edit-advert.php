@@ -28,6 +28,7 @@
                 </tr>
                 <?php else: ?>
                 <?php foreach ($posts as $p): ?>
+                <?php $isArchived = (($p['status'] ?? 'active') === 'archived'); ?>
                 <tr>
                     <td class="text-nowrap text-muted small" data-label="Дата"><?= date('d/m', strtotime($p['created_at'])) ?></td>
                     <td data-label="Действие"><?= htmlspecialchars($p['action_name']) ?></td>
@@ -37,10 +38,23 @@
                     </td>
                     <td data-label="Комнат"><?= (int)$p['room'] ?></td>
                     <td data-label="М²"><?= (int)$p['m2'] ?></td>
-                    <td class="cost" data-label="Цена"><?= number_format((int)$p['cost'], 0, '', ' ') ?> ₽</td>
+                    <td class="cost" data-label="Цена">
+                        <?= number_format((int)$p['cost'], 0, '', ' ') ?> ₽
+                        <div class="small mt-1">
+                            <?php if ($isArchived): ?>
+                                <span class="badge bg-secondary">Архив</span>
+                            <?php else: ?>
+                                <span class="badge bg-success">Активно</span>
+                            <?php endif; ?>
+                        </div>
+                    </td>
                     <td data-label="Действия" class="d-flex gap-1 flex-wrap">
                         <a href="/edit/<?= (int)$p['id'] ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Редактировать</a>
-                        <button type="button" class="btn btn-outline-danger btn-sm btn-delete-post" data-id="<?= (int)$p['id'] ?>"><i class="bi bi-trash"></i> Удалить</button>
+                        <?php if ($isArchived): ?>
+                            <button type="button" class="btn btn-outline-success btn-sm btn-restore-post" data-id="<?= (int)$p['id'] ?>"><i class="bi bi-arrow-counterclockwise"></i> Восстановить</button>
+                        <?php else: ?>
+                            <button type="button" class="btn btn-outline-warning btn-sm btn-delete-post" data-id="<?= (int)$p['id'] ?>"><i class="bi bi-archive"></i> В архив</button>
+                        <?php endif; ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>

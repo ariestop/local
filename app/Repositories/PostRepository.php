@@ -33,9 +33,9 @@ class PostRepository
         return $this->model->getById($id);
     }
 
-    public function getByIds(array $ids): array
+    public function getByIds(array $ids, bool $includeArchived = false): array
     {
-        return $this->model->getByIds($ids);
+        return $this->model->getByIds($ids, $includeArchived);
     }
 
     public function getByUserId(int $userId): array
@@ -56,6 +56,41 @@ class PostRepository
     public function delete(int $id, int $userId): bool
     {
         return $this->model->delete($id, $userId);
+    }
+
+    public function archive(int $id, int $actorUserId, string $reason): bool
+    {
+        return $this->model->archive($id, $actorUserId, $reason);
+    }
+
+    public function restore(int $id): bool
+    {
+        return $this->model->restore($id);
+    }
+
+    public function hardDelete(int $id): bool
+    {
+        return $this->model->hardDelete($id);
+    }
+
+    public function getExpiredActiveForProcessing(int $limit = 100): array
+    {
+        return $this->model->getExpiredActiveForProcessing($limit);
+    }
+
+    public function countExpiredActiveForProcessing(): int
+    {
+        return $this->model->countExpiredActiveForProcessing();
+    }
+
+    public function markExpiryNotified(int $postId): void
+    {
+        $this->model->markExpiryNotified($postId);
+    }
+
+    public function getExpiryAutomationTotals(): array
+    {
+        return $this->model->getExpiryAutomationTotals();
     }
 
     public function incrementViewCount(int $postId): void

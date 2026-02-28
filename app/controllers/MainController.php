@@ -25,19 +25,21 @@ class MainController extends Controller
     {
         $perPage = 20;
         $page = max(1, (int) ($_GET['page'] ?? 1));
+        $user = $this->getLoggedUser();
+        $isAdmin = (int) ($user['is_admin'] ?? 0) === 1;
         $filters = [
             'city_id' => $_GET['city_id'] ?? '',
             'action_id' => $_GET['action_id'] ?? '',
             'room' => $_GET['room'] ?? '',
             'price_min' => $_GET['price_min'] ?? '',
             'price_max' => $_GET['price_max'] ?? '',
+            'post_id' => $isAdmin ? ($_GET['post_id'] ?? '') : '',
         ];
         $sort = in_array($_GET['sort'] ?? '', ['date_desc', 'date_asc', 'price_asc', 'price_desc'])
             ? $_GET['sort'] : 'date_desc';
         $result = $this->postService->getPaginatedList($perPage, $page, $filters, $sort);
         $popularPosts = $this->postService->getPopular(5);
         $activity = $this->postService->getActivity(7);
-        $user = $this->getLoggedUser();
         $favoriteIds = $user ? $this->favoriteRepo->getPostIdsByUserId((int) $user['id']) : [];
         $postIds = array_map(static fn(array $p): int => (int) ($p['id'] ?? 0), $result['posts']);
         $firstPhotos = $this->postService->getFirstPhotosForPosts(array_values(array_filter($postIds)));
@@ -55,6 +57,7 @@ class MainController extends Controller
             'firstPhotos' => $firstPhotos,
             'popularPosts' => $popularPosts,
             'activity' => $activity,
+            'isAdmin' => $isAdmin,
         ]);
     }
 
@@ -68,6 +71,13 @@ class MainController extends Controller
             return;
         }
         $user = $this->getLoggedUser();
+        $isAdmin = (int) ($user['is_admin'] ?? 0) === 1;
+        $isOwner = $user && (int) ($data['post']['user_id'] ?? 0) === (int) ($user['id'] ?? 0);
+        if (($data['post']['status'] ?? 'active') !== 'active' && !$isAdmin && !$isOwner) {
+            http_response_code(404);
+            $this->render('main/404');
+            return;
+        }
         $this->postService->registerView($postId, $user ? (int) $user['id'] : null);
         $data['post']['view_count'] = (int) ($data['post']['view_count'] ?? 0) + 1;
         $isFavorite = $user && $this->favoriteRepo->has((int) $user['id'], $postId);
@@ -145,7 +155,34 @@ class MainController extends Controller
             return;
         }
         $user = $this->getLoggedUser();
-        $result = $this->postService->delete((int) $id, (int) $user['id']);
+        $isAdmin = (int) ($user['is_admin'] ?? 0) === 1;
+        $result = $this->postService->delete((int) $id, (int) $user['id'], $isAdmin);
+        $this->jsonResult($result);
+    }
+
+    public function hardDelete(string $id): void
+    {
+        $this->requireAuth();
+        if (!$this->validateCsrf()) {
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
+            return;
+        }
+        $user = $this->getLoggedUser();
+        $isAdmin = (int) ($user['is_admin'] ?? 0) === 1;
+        $result = $this->postService->hardDelete((int) $id, (int) $user['id'], $isAdmin);
+        $this->jsonResult($result);
+    }
+
+    public function restore(string $id): void
+    {
+        $this->requireAuth();
+        if (!$this->validateCsrf()) {
+            $this->jsonError(static::CSRF_ERROR_MESSAGE, 403);
+            return;
+        }
+        $user = $this->getLoggedUser();
+        $isAdmin = (int) ($user['is_admin'] ?? 0) === 1;
+        $result = $this->postService->restore((int) $id, (int) $user['id'], $isAdmin);
         $this->jsonResult($result);
     }
 

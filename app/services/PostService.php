@@ -18,6 +18,7 @@ class PostService
         private PostPhotoRepository $photoRepo,
         private ReferenceRepository $refRepo,
         private ImageService $imageService,
+        private MailService $mailService,
         private PDO $db,
         private int $maxPrice = 999_000_000,
         private ?LoggerInterface $logger = null
@@ -190,26 +191,83 @@ class PostService
         return ['success' => true, 'id' => $id];
     }
 
-    public function delete(int $id, int $userId): array
+    public function delete(int $id, int $userId, bool $isAdmin = false): array
     {
         $post = $this->postRepo->getById($id);
-        if (!$post || (int) $post['user_id'] !== $userId) {
+        if (!$post) {
             return ['success' => false, 'error' => 'Объявление не найдено', 'code' => 404];
         }
+        $isOwner = (int) $post['user_id'] === $userId;
+        if (!$isOwner && !$isAdmin) {
+            return ['success' => false, 'error' => 'Доступ запрещён', 'code' => 403];
+        }
+        $reason = $isAdmin ? 'manual_admin' : 'manual_owner';
         try {
             $this->db->beginTransaction();
-            $this->photoRepo->deleteByPostId($id);
-            $this->postRepo->delete($id, $userId);
+            $this->postRepo->archive($id, $userId, $reason);
             $this->db->commit();
         } catch (\Throwable $e) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
-            $this->logger?->warning('Post delete transaction failed', ['post_id' => $id, 'user_id' => $userId, 'error' => $e->getMessage()]);
+            $this->logger?->warning('Post archive transaction failed', ['post_id' => $id, 'user_id' => $userId, 'error' => $e->getMessage()]);
+            return ['success' => false, 'error' => 'Не удалось архивировать объявление', 'code' => 500];
+        }
+        $this->logger?->info('Post archived', ['post_id' => $id, 'user_id' => $userId, 'reason' => $reason]);
+        return ['success' => true];
+    }
+
+    public function hardDelete(int $id, int $userId, bool $isAdmin): array
+    {
+        if (!$isAdmin) {
+            return ['success' => false, 'error' => 'Доступ запрещён', 'code' => 403];
+        }
+        $post = $this->postRepo->getById($id);
+        if (!$post) {
+            return ['success' => false, 'error' => 'Объявление не найдено', 'code' => 404];
+        }
+        $ownerId = (int) ($post['user_id'] ?? 0);
+        try {
+            $this->db->beginTransaction();
+            $this->photoRepo->deleteByPostId($id);
+            $this->postRepo->hardDelete($id);
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            $this->logger?->warning('Post hard delete transaction failed', ['post_id' => $id, 'user_id' => $userId, 'error' => $e->getMessage()]);
             return ['success' => false, 'error' => 'Не удалось удалить объявление', 'code' => 500];
         }
-        $this->imageService->deletePostFolder($userId, $id);
-        $this->logger?->info('Post deleted', ['post_id' => $id, 'user_id' => $userId]);
+        if ($ownerId > 0) {
+            $this->imageService->deletePostFolder($ownerId, $id);
+        }
+        $this->logger?->info('Post hard-deleted', ['post_id' => $id, 'user_id' => $userId]);
+        return ['success' => true];
+    }
+
+    public function restore(int $id, int $userId, bool $isAdmin = false): array
+    {
+        $post = $this->postRepo->getById($id);
+        if (!$post) {
+            return ['success' => false, 'error' => 'Объявление не найдено', 'code' => 404];
+        }
+        $isOwner = (int) $post['user_id'] === $userId;
+        if (!$isOwner && !$isAdmin) {
+            return ['success' => false, 'error' => 'Доступ запрещён', 'code' => 403];
+        }
+        try {
+            $this->db->beginTransaction();
+            $this->postRepo->restore($id);
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            $this->logger?->warning('Post restore transaction failed', ['post_id' => $id, 'user_id' => $userId, 'error' => $e->getMessage()]);
+            return ['success' => false, 'error' => 'Не удалось восстановить объявление', 'code' => 500];
+        }
+        $this->logger?->info('Post restored', ['post_id' => $id, 'user_id' => $userId]);
         return ['success' => true];
     }
 
@@ -251,6 +309,61 @@ class PostService
         } catch (\Throwable $e) {
             $this->logger?->warning('Post view tracking failed', ['post_id' => $postId, 'error' => $e->getMessage()]);
         }
+    }
+
+    public function processExpiredListings(int $limit = 100): array
+    {
+        $rows = $this->postRepo->getExpiredActiveForProcessing($limit);
+        $archived = 0;
+        $notified = 0;
+
+        foreach ($rows as $row) {
+            $postId = (int) ($row['id'] ?? 0);
+            $ownerId = (int) ($row['user_id'] ?? 0);
+            if ($postId <= 0 || $ownerId <= 0) {
+                continue;
+            }
+
+            try {
+                $this->db->beginTransaction();
+                $this->postRepo->archive($postId, $ownerId, 'expired');
+                $this->db->commit();
+                $archived++;
+            } catch (\Throwable $e) {
+                if ($this->db->inTransaction()) {
+                    $this->db->rollBack();
+                }
+                $this->logger?->warning('Auto-archive expired post failed', ['post_id' => $postId, 'error' => $e->getMessage()]);
+                continue;
+            }
+
+            if (!empty($row['expiry_notified_at'])) {
+                continue;
+            }
+
+            $email = trim((string) ($row['email'] ?? ''));
+            if ($email === '') {
+                continue;
+            }
+            $name = trim((string) ($row['name'] ?? 'Пользователь'));
+            $title = trim((string) ($row['title'] ?? 'Ваше объявление'));
+            if ($this->mailService->sendPostExpiredEmail($email, $name, $postId, $title)) {
+                $this->postRepo->markExpiryNotified($postId);
+                $notified++;
+            }
+        }
+
+        return ['archived' => $archived, 'notified' => $notified, 'processed' => count($rows)];
+    }
+
+    public function countExpiredActiveForProcessing(): int
+    {
+        return $this->postRepo->countExpiredActiveForProcessing();
+    }
+
+    public function getExpiryAutomationTotals(): array
+    {
+        return $this->postRepo->getExpiryAutomationTotals();
     }
 
     /**

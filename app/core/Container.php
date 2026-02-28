@@ -75,6 +75,7 @@ class Container
                 $this->get(PostPhotoRepository::class),
                 $this->get(ReferenceRepository::class),
                 $this->get(ImageService::class),
+                $this->get(MailService::class),
                 $this->get(PDO::class),
                 (int) ($this->config['app']['max_price'] ?? 999_000_000),
                 $this->get(LoggerInterface::class)

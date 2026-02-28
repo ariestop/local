@@ -18,12 +18,12 @@
         mounted() {
             const alwaysMethods = ['bindLoginModalHint', 'bindLogin', 'bindRegister', 'bindRegEmailCheck'];
             const byPage = {
-                index: ['bindPagination', 'bindFavoriteButtons', 'bindHistoryPanel'],
+                index: ['bindPagination', 'bindFavoriteButtons', 'bindAdminPostActions', 'bindHistoryPanel'],
                 detail: ['bindFavoriteButtons', 'bindDetailGallery', 'trackCurrentDetailInHistory'],
                 favorites: ['bindRemoveFavorite'],
                 add: ['bindAddForm', 'bindCityArea'],
                 edit: ['bindEditForm', 'bindCityArea'],
-                'edit-advert': ['bindDeleteButtons'],
+                'edit-advert': ['bindDeleteButtons', 'bindRestoreButtons'],
                 'forgot-password': ['bindForgotForm'],
                 'reset-password': ['bindResetForm']
             };

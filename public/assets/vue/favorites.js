@@ -67,18 +67,100 @@
         bindDeleteButtons() {
             document.querySelectorAll('.btn-delete-post').forEach((btn) => {
                 btn.addEventListener('click', async () => {
-                    if (!confirm('Удалить это объявление? Фотографии и папка будут удалены.')) return;
+                    if (!confirm('Перенести это объявление в архив?')) return;
                     const id = btn.dataset.id;
                     const fd = new FormData();
                     fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
                     try {
                         const data = await this.apiPost('/delete/' + id, fd);
-                        if (data.success) location.reload();
+                        if (data.success) {
+                            window.showToast?.('Объявление перемещено в архив');
+                            location.reload();
+                        }
                         else window.showToast?.(data.error || 'Ошибка удаления', 'warning');
                     } catch (err) {
                         window.showToast?.('Ошибка сети при удалении', 'warning');
                     }
                 });
+            });
+        },
+
+        bindRestoreButtons() {
+            document.querySelectorAll('.btn-restore-post').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm('Восстановить это объявление и активировать на 30 дней?')) return;
+                    const id = btn.dataset.id;
+                    const fd = new FormData();
+                    fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
+                    try {
+                        const data = await this.apiPost('/restore/' + id, fd);
+                        if (data.success) {
+                            window.showToast?.('Объявление восстановлено');
+                            location.reload();
+                        } else {
+                            window.showToast?.(data.error || 'Ошибка восстановления', 'warning');
+                        }
+                    } catch (err) {
+                        window.showToast?.('Ошибка сети при восстановлении', 'warning');
+                    }
+                });
+            });
+        },
+
+        bindAdminPostActions() {
+            const modalEl = document.getElementById('adminPostActionModal');
+            const triggerButtons = document.querySelectorAll('.btn-admin-post-action');
+            if (!modalEl || !triggerButtons.length || typeof bootstrap === 'undefined') return;
+
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            const idLabel = document.getElementById('adminPostActionIdLabel');
+            const archiveBtn = document.getElementById('adminArchiveBtn');
+            const hardDeleteBtn = document.getElementById('adminHardDeleteBtn');
+            let selectedId = 0;
+
+            triggerButtons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    selectedId = parseInt(btn.dataset.id || '0', 10) || 0;
+                    if (idLabel) idLabel.textContent = '#' + selectedId;
+                    modal.show();
+                });
+            });
+
+            archiveBtn?.addEventListener('click', async () => {
+                if (!selectedId) return;
+                try {
+                    const fd = new FormData();
+                    fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
+                    const data = await this.apiPost('/delete/' + selectedId, fd);
+                    if (data.success) {
+                        modal.hide();
+                        window.showToast?.('Объявление перемещено в архив');
+                        location.reload();
+                    } else {
+                        window.showToast?.(data.error || 'Ошибка архивации', 'warning');
+                    }
+                } catch (_err) {
+                    window.showToast?.('Ошибка сети при архивации', 'warning');
+                }
+            });
+
+            hardDeleteBtn?.addEventListener('click', async () => {
+                if (!selectedId) return;
+                if (!confirm('Удалить объявление с сервера безвозвратно?')) return;
+                try {
+                    const fd = new FormData();
+                    fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
+                    const data = await this.apiPost('/delete-hard/' + selectedId, fd);
+                    if (data.success) {
+                        modal.hide();
+                        window.showToast?.('Объявление удалено');
+                        location.reload();
+                    } else {
+                        window.showToast?.(data.error || 'Ошибка удаления', 'warning');
+                    }
+                } catch (_err) {
+                    window.showToast?.('Ошибка сети при удалении', 'warning');
+                }
             });
         },
     };
