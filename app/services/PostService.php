@@ -168,7 +168,7 @@ class PostService
                 $this->photoRepo->updateSortOrder($id, $existingInOrder);
             }
             $currentCount = $this->photoRepo->countByPostId($id);
-            $remainingSlots = max(0, 5 - $currentCount);
+            $remainingSlots = max(0, 10 - $currentCount);
             $photos = $this->normalizeFilesArray($files['photos'] ?? $files);
             if (!empty($photos['name'][0]) && $remainingSlots > 0) {
                 $uploaded = $this->imageService->upload($userId, $id, $photos, $remainingSlots);
@@ -364,6 +364,16 @@ class PostService
     public function getExpiryAutomationTotals(): array
     {
         return $this->postRepo->getExpiryAutomationTotals();
+    }
+
+    public function getActiveForSitemap(int $limit = 50000): array
+    {
+        return $this->postRepo->getActiveForSitemap($limit);
+    }
+
+    public function getActiveSitemapFilterValues(int $limit = 200): array
+    {
+        return $this->postRepo->getActiveSitemapFilterValues($limit);
     }
 
     /**

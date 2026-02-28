@@ -8,6 +8,7 @@ use App\Core\Container;
 use App\Core\Controller;
 use App\Repositories\FavoriteRepository;
 use App\Services\PostService;
+use App\Services\SeoService;
 
 class MainController extends Controller
 {
@@ -16,10 +17,12 @@ class MainController extends Controller
         parent::__construct($container);
         $this->postService = $container->get(PostService::class);
         $this->favoriteRepo = $container->get(FavoriteRepository::class);
+        $this->seoService = $container->get(SeoService::class);
     }
 
     private PostService $postService;
     private FavoriteRepository $favoriteRepo;
+    private SeoService $seoService;
 
     public function index(): void
     {
@@ -38,11 +41,20 @@ class MainController extends Controller
         $sort = in_array($_GET['sort'] ?? '', ['date_desc', 'date_asc', 'price_asc', 'price_desc'])
             ? $_GET['sort'] : 'date_desc';
         $result = $this->postService->getPaginatedList($perPage, $page, $filters, $sort);
+        $formData = $this->postService->getFormData();
         $popularPosts = $this->postService->getPopular(5);
         $activity = $this->postService->getActivity(7);
         $favoriteIds = $user ? $this->favoriteRepo->getPostIdsByUserId((int) $user['id']) : [];
         $postIds = array_map(static fn(array $p): int => (int) ($p['id'] ?? 0), $result['posts']);
         $firstPhotos = $this->postService->getFirstPhotosForPosts(array_values(array_filter($postIds)));
+        $seo = $this->seoService->buildIndexSeo(
+            $filters,
+            $sort,
+            $page,
+            $formData['actions'] ?? [],
+            $formData['cities'] ?? [],
+            $_GET
+        );
         $this->render('main/index', [
             'posts' => $result['posts'],
             'user' => $user,
@@ -51,13 +63,14 @@ class MainController extends Controller
             'total' => $result['total'],
             'filters' => $filters,
             'sort' => $sort,
-            'actions' => $this->postService->getFormData()['actions'] ?? [],
-            'cities' => $this->postService->getFormData()['cities'] ?? [],
+            'actions' => $formData['actions'] ?? [],
+            'cities' => $formData['cities'] ?? [],
             'favoriteIds' => $favoriteIds,
             'firstPhotos' => $firstPhotos,
             'popularPosts' => $popularPosts,
             'activity' => $activity,
             'isAdmin' => $isAdmin,
+            'seo' => $seo,
         ]);
     }
 
@@ -81,11 +94,13 @@ class MainController extends Controller
         $this->postService->registerView($postId, $user ? (int) $user['id'] : null);
         $data['post']['view_count'] = (int) ($data['post']['view_count'] ?? 0) + 1;
         $isFavorite = $user && $this->favoriteRepo->has((int) $user['id'], $postId);
+        $seo = $this->seoService->buildDetailSeo($data['post'], $data['photos']);
         $this->render('main/detail', [
             'post' => $data['post'],
             'photos' => $data['photos'],
             'user' => $user,
             'isFavorite' => $isFavorite,
+            'seo' => $seo,
         ]);
     }
 

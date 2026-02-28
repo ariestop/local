@@ -9,7 +9,8 @@
         "monolog/monolog": "^3.5"
     },
     "require-dev": {
-        "php-debugbar/php-debugbar": "^3.0"
+        "php-debugbar/php-debugbar": "^3.0",
+        "phpunit/phpunit": "^13.0"
     },
     "autoload": {
         "psr-4": {

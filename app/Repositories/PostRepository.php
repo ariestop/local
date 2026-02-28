@@ -112,4 +112,14 @@ class PostRepository
     {
         return $this->model->getActivity($days);
     }
+
+    public function getActiveForSitemap(int $limit = 50000): array
+    {
+        return $this->model->getActiveForSitemap($limit);
+    }
+
+    public function getActiveSitemapFilterValues(int $limit = 200): array
+    {
+        return $this->model->getActiveSitemapFilterValues($limit);
+    }
 }

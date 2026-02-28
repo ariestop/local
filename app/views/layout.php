@@ -6,8 +6,39 @@
     <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
     <meta name="app-base" content="<?= htmlspecialchars(rtrim(parse_url($config['app']['url'] ?? '', PHP_URL_PATH) ?: '', '/')) ?>">
     <meta name="app-history-limit" content="<?= (int)($config['app']['history_limit'] ?? 10) ?>">
+    <?php
+    $siteName = (string) ($config['app']['name'] ?? 'Доска объявлений');
+    $seo = is_array($seo ?? null) ? $seo : [];
+    $seoTitle = trim((string) ($seo['title'] ?? ''));
+    $seoDescription = trim((string) ($seo['description'] ?? ''));
+    $seoRobots = trim((string) ($seo['robots'] ?? 'noindex,follow'));
+    $seoCanonical = trim((string) ($seo['canonical'] ?? ''));
+    $seoOgType = trim((string) ($seo['og_type'] ?? 'website'));
+    $seoJsonLd = $seo['json_ld'] ?? [];
+    if (!is_array($seoJsonLd)) {
+        $seoJsonLd = [];
+    }
+    if ($seoTitle === '') {
+        $seoTitle = $siteName . ' - продажа недвижимости';
+    }
+    ?>
     <?php if (!empty($GLOBALS['_debugbar_renderer'])): echo $GLOBALS['_debugbar_renderer']->renderHead(); endif; ?>
-    <title><?= htmlspecialchars($config['app']['name'] ?? 'Доска объявлений') ?> - продажа недвижимости</title>
+    <title><?= htmlspecialchars($seoTitle) ?></title>
+    <?php if ($seoDescription !== ''): ?>
+    <meta name="description" content="<?= htmlspecialchars($seoDescription) ?>">
+    <?php endif; ?>
+    <meta name="robots" content="<?= htmlspecialchars($seoRobots) ?>">
+    <?php if ($seoCanonical !== ''): ?>
+    <link rel="canonical" href="<?= htmlspecialchars($seoCanonical) ?>">
+    <?php endif; ?>
+    <meta property="og:type" content="<?= htmlspecialchars($seoOgType) ?>">
+    <meta property="og:title" content="<?= htmlspecialchars($seoTitle) ?>">
+    <?php if ($seoDescription !== ''): ?>
+    <meta property="og:description" content="<?= htmlspecialchars($seoDescription) ?>">
+    <?php endif; ?>
+    <?php if ($seoCanonical !== ''): ?>
+    <meta property="og:url" content="<?= htmlspecialchars($seoCanonical) ?>">
+    <?php endif; ?>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
@@ -214,6 +245,11 @@
     <script src="<?= htmlspecialchars($assetUrl('/assets/vue/favorites.js')) ?>"></script>
     <script src="<?= htmlspecialchars($assetUrl('/assets/vue/gallery.js')) ?>"></script>
     <script src="<?= htmlspecialchars($assetUrl('/assets/vue-app.js')) ?>"></script>
+    <?php foreach ($seoJsonLd as $jsonLdItem): ?>
+        <?php if (is_array($jsonLdItem) && $jsonLdItem !== []): ?>
+    <script type="application/ld+json"><?= json_encode($jsonLdItem, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
+        <?php endif; ?>
+    <?php endforeach; ?>
     <?php if (!empty($GLOBALS['_debugbar_renderer'])): echo $GLOBALS['_debugbar_renderer']->render(); endif; ?>
 </body>
 </html>

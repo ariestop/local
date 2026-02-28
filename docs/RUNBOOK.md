@@ -28,6 +28,23 @@
 5. Выполнить smoke-check на production.
 6. Подписать go/no-go.
 
+## SEO smoke-check (после релиза)
+
+1. Проверить `GET /robots.txt`:
+   - код ответа 200;
+   - присутствует `Sitemap: /sitemap.xml`.
+2. Проверить `GET /sitemap.xml`:
+   - код ответа 200;
+   - валидный XML;
+   - есть URL главной, активных карточек и whitelist-фильтров.
+3. Проверить исходник `/`:
+   - присутствуют `title`, `meta description`, `meta robots`, `canonical`.
+4. Проверить исходник `/detail/{id}`:
+   - присутствуют `title`, `meta description`, `canonical`;
+   - есть JSON-LD блоки (`BreadcrumbList`, `Product`, `Offer`).
+5. Проверить служебную страницу (например `/add` или `/favorites`):
+   - `meta robots` должен быть `noindex,nofollow`.
+
 ## Stabilization window (60 минут)
 
 - Мониторинг:

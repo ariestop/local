@@ -99,6 +99,9 @@ abstract class Controller
         $data['view'] = $view;
         $data['config'] = $this->config;
         $data['user'] = $data['user'] ?? $this->getLoggedUser();
+        $data['seo'] = $data['seo'] ?? [
+            'robots' => 'noindex,nofollow',
+        ];
         extract($data);
         require dirname(__DIR__) . '/views/layout.php';
     }

@@ -11,6 +11,7 @@ return [
         '/edit/{id}' => [\App\Controllers\MainController::class, 'edit'],
         '/favorites' => [\App\Controllers\MainController::class, 'favorites'],
         '/admin' => [\App\Controllers\AdminController::class, 'report'],
+        '/sitemap.xml' => [\App\Controllers\SeoController::class, 'sitemap'],
         '/admin-migrations' => [\App\Controllers\AdminController::class, 'migrations'],
         '/verify-email' => [\App\Controllers\UserController::class, 'verifyEmail'],
         '/forgot-password' => [\App\Controllers\UserController::class, 'forgotPassword'],

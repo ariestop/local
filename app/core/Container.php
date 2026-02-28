@@ -23,6 +23,7 @@ use App\Services\MigrationService;
 use App\Services\RateLimiter;
 use App\Log\LoggerInterface;
 use App\Services\PostService;
+use App\Services\SeoService;
 use PDO;
 
 class Container
@@ -80,10 +81,12 @@ class Container
                 (int) ($this->config['app']['max_price'] ?? 999_000_000),
                 $this->get(LoggerInterface::class)
             ),
+            SeoService::class => new SeoService($this->config),
             \App\Controllers\MainController::class => new \App\Controllers\MainController($this),
             \App\Controllers\UserController::class => new \App\Controllers\UserController($this),
             \App\Controllers\ApiController::class => new \App\Controllers\ApiController($this),
             \App\Controllers\AdminController::class => new \App\Controllers\AdminController($this),
+            \App\Controllers\SeoController::class => new \App\Controllers\SeoController($this),
             default => throw new \InvalidArgumentException("Unknown service: {$id}"),
         };
     }

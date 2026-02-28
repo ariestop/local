@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /admin
+Disallow: /admin-migrations
+Disallow: /add
+Disallow: /edit-advert
+Disallow: /edit/
+Disallow: /favorites
+Disallow: /api/
+
+Sitemap: /sitemap.xml

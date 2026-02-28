@@ -358,4 +358,86 @@ class Post
         }
         return $result;
     }
+
+    public function getActiveForSitemap(int $limit = 50000): array
+    {
+        $limit = max(1, min(100000, $limit));
+        $stmt = $this->db->prepare("
+            SELECT id, created_at
+            FROM post
+            WHERE status = 'active'
+            ORDER BY id DESC
+            LIMIT ?
+        ");
+        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getActiveSitemapFilterValues(int $limit = 200): array
+    {
+        $limit = max(1, min(2000, $limit));
+
+        $cityStmt = $this->db->prepare("
+            SELECT DISTINCT city_id
+            FROM post
+            WHERE status = 'active' AND city_id > 0
+            ORDER BY city_id ASC
+            LIMIT ?
+        ");
+        $cityStmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $cityStmt->execute();
+        $cityIds = array_map('intval', $cityStmt->fetchAll(PDO::FETCH_COLUMN));
+
+        $actionStmt = $this->db->prepare("
+            SELECT DISTINCT action_id
+            FROM post
+            WHERE status = 'active' AND action_id > 0
+            ORDER BY action_id ASC
+            LIMIT ?
+        ");
+        $actionStmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $actionStmt->execute();
+        $actionIds = array_map('intval', $actionStmt->fetchAll(PDO::FETCH_COLUMN));
+
+        $roomStmt = $this->db->prepare("
+            SELECT DISTINCT room
+            FROM post
+            WHERE status = 'active' AND room > 0
+            ORDER BY room ASC
+            LIMIT ?
+        ");
+        $roomStmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $roomStmt->execute();
+        $rooms = array_map('intval', $roomStmt->fetchAll(PDO::FETCH_COLUMN));
+
+        $comboStmt = $this->db->prepare("
+            SELECT city_id, action_id, room, COUNT(*) AS c
+            FROM post
+            WHERE status = 'active'
+              AND city_id > 0
+              AND action_id > 0
+              AND room > 0
+            GROUP BY city_id, action_id, room
+            ORDER BY c DESC
+            LIMIT ?
+        ");
+        $comboStmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $comboStmt->execute();
+        $combos = [];
+        foreach ($comboStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $combos[] = [
+                'city_id' => (int) ($row['city_id'] ?? 0),
+                'action_id' => (int) ($row['action_id'] ?? 0),
+                'room' => (int) ($row['room'] ?? 0),
+            ];
+        }
+
+        return [
+            'city_ids' => $cityIds,
+            'action_ids' => $actionIds,
+            'rooms' => $rooms,
+            'combos' => $combos,
+        ];
+    }
 }
