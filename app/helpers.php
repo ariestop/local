@@ -26,6 +26,38 @@ function h(string $s): string
     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 }
 
+function app_entry_path(): string
+{
+    $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if ($scriptName === '') {
+        return '';
+    }
+    $entry = '/' . ltrim($scriptName, '/');
+    return rtrim($entry, '/');
+}
+
+function use_front_controller_urls(): bool
+{
+    $raw = (string) ($_ENV['APP_USE_FRONT_CONTROLLER_URLS'] ?? getenv('APP_USE_FRONT_CONTROLLER_URLS') ?: '0');
+    return filter_var($raw, FILTER_VALIDATE_BOOLEAN);
+}
+
+function route_url(string $path = '/'): string
+{
+    $normalized = '/' . ltrim($path, '/');
+    if (!use_front_controller_urls()) {
+        return $normalized;
+    }
+    $entry = app_entry_path();
+    if ($entry === '') {
+        return $normalized;
+    }
+    if ($normalized === '/') {
+        return $entry;
+    }
+    return $entry . $normalized;
+}
+
 function _photo_url(int $userId, int $postId, string $filename, string $suffix): string
 {
     $base = pathinfo($filename, PATHINFO_FILENAME);

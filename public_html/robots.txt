@@ -8,3 +8,4 @@ Disallow: /favorites
 Disallow: /api/
 
 Sitemap: /sitemap.xml
+Sitemap: /index.php/sitemap.xml

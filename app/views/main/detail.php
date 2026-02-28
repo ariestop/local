@@ -61,7 +61,7 @@ if ($pageTitle === '') {
 </style>
 
 <div class="mb-3">
-    <a href="/" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> К списку</a>
+    <a href="<?= route_url('/') ?>" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> К списку</a>
 </div>
 
 <div class="detail-shell shadow-sm">
@@ -176,7 +176,7 @@ window.currentDetailPost = {
     room: <?= (int)($post['room'] ?? 0) ?>,
     m2: <?= (int)($post['m2'] ?? 0) ?>,
     cost: <?= (int)($post['cost'] ?? 0) ?>,
-    url: <?= json_encode('/detail/' . (int)($post['id'] ?? 0)) ?>
+    url: <?= json_encode(route_url('/detail/' . (int)($post['id'] ?? 0))) ?>
 };
 </script>
 

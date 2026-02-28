@@ -31,7 +31,11 @@ abstract class Controller
 
     protected function redirect(string $url, int $code = 302): void
     {
-        header('Location: ' . $url, true, $code);
+        $target = $url;
+        if ($url !== '' && str_starts_with($url, '/')) {
+            $target = route_url($url);
+        }
+        header('Location: ' . $target, true, $code);
         exit;
     }
 

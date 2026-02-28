@@ -1,5 +1,5 @@
 <div class="mb-4">
-    <a href="/" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> На главную</a>
+    <a href="<?= route_url('/') ?>" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> На главную</a>
 </div>
 <div class="card border-0 shadow-sm mx-auto" style="max-width:400px">
     <div class="card-body">

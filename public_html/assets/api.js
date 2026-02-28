@@ -11,7 +11,14 @@
         return (!raw || raw === '/') ? '' : raw.replace(/\/+$/, '');
     }
 
+    function useFrontControllerUrls() {
+        return (document.querySelector('meta[name="app-front-controller"]')?.content || '') === '1';
+    }
+
     function appRequestPrefix() {
+        if (!useFrontControllerUrls()) {
+            return appBasePath();
+        }
         const entry = (document.querySelector('meta[name="app-entry"]')?.content || '').trim();
         if (entry) {
             return entry.replace(/\/+$/, '');

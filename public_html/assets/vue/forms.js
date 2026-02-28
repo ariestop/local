@@ -181,7 +181,8 @@
                     if (data.success) {
                         this.clearFormDraft(draftKey);
                         window.showToast?.('Объявление добавлено');
-                        window.location.href = '/detail/' + data.id;
+                        const detailPath = '/detail/' + data.id;
+                        window.location.href = window.withBasePath ? window.withBasePath(detailPath) : detailPath;
                     } else {
                         window.showError?.('addError', data.error || data.message || 'Ошибка сервера');
                         window.showToast?.(data.error || 'Не удалось добавить объявление', 'warning');
@@ -273,7 +274,8 @@
                         if (hasDeleteByCheckbox && !hasFormFieldChanges && !hasNewPhotos) {
                             window.location.reload();
                         } else {
-                            window.location.href = '/edit-advert';
+                            const myPostsPath = '/edit-advert';
+                            window.location.href = window.withBasePath ? window.withBasePath(myPostsPath) : myPostsPath;
                         }
                     } else {
                         window.showError?.('editError', data.error || 'Ошибка');
@@ -344,7 +346,8 @@
                     const data = await this.apiPost(window.location.pathname, fd);
                     if (data.success) {
                         window.showToast?.('Пароль изменён');
-                        window.location.href = '/';
+                        const homePath = '/';
+                        window.location.href = window.withBasePath ? window.withBasePath(homePath) : homePath;
                     } else if (err) {
                         err.textContent = data.error || 'Ошибка';
                         err.classList.remove('d-none');

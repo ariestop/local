@@ -16,8 +16,8 @@ $runLimit = (int) (($runStats['target'] ?? $pendingExpireCount));
 <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <h1 class="h4 mb-0">Админ-панель</h1>
     <div class="d-flex gap-2">
-        <a href="/admin-migrations" class="btn btn-sm btn-outline-secondary">Миграции</a>
-        <a href="/" class="btn btn-sm btn-outline-secondary">На главную</a>
+        <a href="<?= route_url('/admin-migrations') ?>" class="btn btn-sm btn-outline-secondary">Миграции</a>
+        <a href="<?= route_url('/') ?>" class="btn btn-sm btn-outline-secondary">На главную</a>
     </div>
 </div>
 
@@ -46,7 +46,7 @@ $runLimit = (int) (($runStats['target'] ?? $pendingExpireCount));
                 Сейчас к обработке: <strong><?= $pendingExpireCount ?></strong>.
                 Алгоритм запускается пакетами по <strong>100</strong> автоматически до достижения лимита или окончания очереди.
             </p>
-            <form id="expirePostsForm" method="post" action="/admin/expire-posts" class="row g-2 align-items-end">
+            <form id="expirePostsForm" method="post" action="<?= route_url('/admin/expire-posts') ?>" class="row g-2 align-items-end">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
                 <div class="col-sm-4 col-md-3">
                     <label for="expireLimit" class="form-label form-label-sm mb-1">Сколько обработать</label>
@@ -137,7 +137,7 @@ $runLimit = (int) (($runStats['target'] ?? $pendingExpireCount));
                                 <tr>
                                     <td><?= (int) $p['id'] ?></td>
                                     <td>
-                                        <a href="/detail/<?= (int) $p['id'] ?>" class="text-decoration-none">
+                                        <a href="<?= route_url('/detail/' . (int) $p['id']) ?>" class="text-decoration-none">
                                             <?= htmlspecialchars($p['action_name'] . ' ' . $p['object_name']) ?>
                                         </a>
                                         <div class="small text-muted"><?= htmlspecialchars($p['city_name'] . ', ' . $p['area_name']) ?></div>
@@ -234,7 +234,7 @@ $runLimit = (int) (($runStats['target'] ?? $pendingExpireCount));
         body.set('csrf_token', csrfToken);
         body.set('limit', String(limit));
 
-        const response = await fetch('/admin/expire-posts-batch', {
+        const response = await fetch(<?= json_encode(route_url('/admin/expire-posts-batch')) ?>, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
@@ -331,7 +331,7 @@ $runLimit = (int) (($runStats['target'] ?? $pendingExpireCount));
                 pending_before: String(pendingExpireCount),
                 pending_after: String(pendingAfter),
             });
-            window.location.assign('/admin?' + query.toString());
+            window.location.assign(<?= json_encode(route_url('/admin')) ?> + '?' + query.toString());
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Ошибка запуска.';
             setProgress(0, 'Ошибка: ' + message);

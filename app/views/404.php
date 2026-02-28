@@ -10,7 +10,7 @@
     <div class="text-center">
         <h1 class="display-4 text-muted">404</h1>
         <p class="lead">Страница не найдена</p>
-        <a href="/" class="btn btn-primary">На главную</a>
+        <a href="<?= function_exists('route_url') ? route_url('/') : '/' ?>" class="btn btn-primary">На главную</a>
     </div>
 </body>
 </html>

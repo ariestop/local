@@ -1,5 +1,5 @@
 <div class="mb-4">
-    <a href="/" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> К списку</a>
+    <a href="<?= route_url('/') ?>" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> К списку</a>
 </div>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h4 mb-0">Избранное</h1>
@@ -24,7 +24,7 @@
             <tbody>
                 <?php if (empty($posts)): ?>
                 <tr>
-                    <td colspan="8" class="text-muted text-center py-4">Нет избранных объявлений. <a href="/">Добавьте</a> их со страницы объявлений.</td>
+                    <td colspan="8" class="text-muted text-center py-4">Нет избранных объявлений. <a href="<?= route_url('/') ?>">Добавьте</a> их со страницы объявлений.</td>
                 </tr>
                 <?php else: ?>
                 <?php foreach ($posts as $p): ?>
@@ -44,7 +44,7 @@
                     <td data-label="Действие"><?= htmlspecialchars($p['action_name']) ?></td>
                     <td data-label="Объект"><?= htmlspecialchars($p['object_name']) ?></td>
                     <td data-label="Адрес">
-                        <a href="/detail/<?= (int)$p['id'] ?>" class="text-dark text-decoration-none"><?= htmlspecialchars($p['city_name'] . ', ' . $p['area_name'] . ' р-н., ' . $p['street']) ?></a>
+                        <a href="<?= route_url('/detail/' . (int)$p['id']) ?>" class="text-dark text-decoration-none"><?= htmlspecialchars($p['city_name'] . ', ' . $p['area_name'] . ' р-н., ' . $p['street']) ?></a>
                     </td>
                     <td data-label="Комнат"><?= (int)$p['room'] ?></td>
                     <td data-label="М²"><?= (int)$p['m2'] ?></td>

@@ -16,10 +16,14 @@
     $appBase = $hasRuntimeScriptName
         ? (($runtimeBase !== '' && $runtimeBase !== '/') ? $runtimeBase : '')
         : $configBase;
+    $useFrontControllerUrls = !empty($config['app']['use_front_controller_urls']);
     $appEntry = $hasRuntimeScriptName ? $scriptName : '';
+    $homeUrl = route_url('/');
+    $captchaUrl = route_url('/api/captcha');
     ?>
     <meta name="app-base" content="<?= htmlspecialchars($appBase) ?>">
     <meta name="app-entry" content="<?= htmlspecialchars($appEntry) ?>">
+    <meta name="app-front-controller" content="<?= $useFrontControllerUrls ? '1' : '0' ?>">
     <meta name="app-history-limit" content="<?= (int)($config['app']['history_limit'] ?? 10) ?>">
     <?php
     $siteName = (string) ($config['app']['name'] ?? 'Доска объявлений');
@@ -136,25 +140,25 @@
     ?>
     <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
         <div class="container">
-            <a class="navbar-brand" href="/"><?= htmlspecialchars($config['app']['name']) ?></a>
+            <a class="navbar-brand" href="<?= $homeUrl ?>"><?= htmlspecialchars($config['app']['name']) ?></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="nav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/">Объявления</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= $homeUrl ?>">Объявления</a></li>
                     <?php if ($user): ?>
-                    <li class="nav-item"><a class="nav-link" href="/add">Добавить объявление</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= route_url('/add') ?>">Добавить объявление</a></li>
                     <?php endif; ?>
                     <?php if ($isAdmin): ?>
-                    <li class="nav-item"><a class="nav-link text-danger" href="/admin">Админ-панель</a></li>
+                    <li class="nav-item"><a class="nav-link text-danger" href="<?= route_url('/admin') ?>">Админ-панель</a></li>
                     <?php endif; ?>
                 </ul>
                 <div class="d-flex gap-2">
                     <?php if ($user): ?>
-                    <a class="navbar-text me-2 text-decoration-none text-dark" href="/edit-advert"><?= htmlspecialchars($user['name']) ?></a>
-                    <a class="btn btn-outline-secondary btn-sm me-1" href="/favorites" title="Избранное"><i class="bi bi-heart"></i></a>
-                    <a class="btn btn-outline-secondary btn-sm" href="/logout">Выход</a>
+                    <a class="navbar-text me-2 text-decoration-none text-dark" href="<?= route_url('/edit-advert') ?>"><?= htmlspecialchars($user['name']) ?></a>
+                    <a class="btn btn-outline-secondary btn-sm me-1" href="<?= route_url('/favorites') ?>" title="Избранное"><i class="bi bi-heart"></i></a>
+                    <a class="btn btn-outline-secondary btn-sm" href="<?= route_url('/logout') ?>">Выход</a>
                     <?php else: ?>
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">Вход</button>
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#registerModal">Регистрация</button>
@@ -199,7 +203,7 @@
                         <div class="mb-3">
                             <label class="form-label">Пароль *</label>
                             <input type="password" name="password" class="form-control" required>
-                            <a href="/forgot-password" class="small text-muted">Забыли пароль?</a>
+                            <a href="<?= route_url('/forgot-password') ?>" class="small text-muted">Забыли пароль?</a>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Войти</button>
                     </form>
@@ -239,8 +243,8 @@
                         <div class="mb-3">
                             <label class="form-label">Капча *</label>
                             <div class="d-flex align-items-center gap-2">
-                                <img src="/api/captcha" id="captchaImg" alt="Капча" class="border rounded" style="height:40px">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('captchaImg').src='/api/captcha?'+Date.now()" title="Обновить"><i class="bi bi-arrow-clockwise"></i></button>
+                                <img src="<?= $captchaUrl ?>" id="captchaImg" alt="Капча" class="border rounded" style="height:40px">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick='document.getElementById("captchaImg").src=<?= json_encode($captchaUrl . '?') ?>+Date.now()' title="Обновить"><i class="bi bi-arrow-clockwise"></i></button>
                                 <input type="text" name="captcha" class="form-control" placeholder="Введите код" style="max-width:120px" required>
                             </div>
                         </div>

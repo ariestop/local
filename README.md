@@ -27,6 +27,9 @@ MVC-сайт на PHP 8.5+, Bootstrap 5, MySQL 8.0. Аналог m2saratov.ru. �
      - `web_root = {base_dir}/public_html`
    - При таком запуске локальный URL обычно вида `http://localhost:8888/` (без `/local`).
    - В `.env` укажите `APP_URL` в том же формате, например `http://localhost:8888`.
+   - Переключатель маршрутов:
+     - `APP_USE_FRONT_CONTROLLER_URLS=0` — чистые URL (`/detail/123`), нужен рабочий `mod_rewrite`.
+     - `APP_USE_FRONT_CONTROLLER_URLS=1` — URL через front-controller (`/index.php/detail/123`) для окружений без rewrite.
    - Если `mod_rewrite` недоступен, приложение всё равно работает через front-controller URL:
      - `http://localhost:8888/index.php/...`
      - AJAX-эндпоинты (`/login`, `/api/*`) автоматически отправляются в `index.php`.
@@ -37,6 +40,7 @@ MVC-сайт на PHP 8.5+, Bootstrap 5, MySQL 8.0. Аналог m2saratov.ru. �
        - `DB_HOST=127.0.0.1`
        - `DB_PORT=8889`
        - `APP_URL=http://localhost:8888`
+      - `APP_USE_FRONT_CONTROLLER_URLS=1`
 
 4. **PHP Debug Bar** (опционально, только для разработки)
    - Установка: `composer update` (подключит php-debugbar как dev-зависимость)

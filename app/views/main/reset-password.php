@@ -1,13 +1,13 @@
 <?php $token = $token ?? ''; $error = $error ?? null; ?>
 <div class="mb-4">
-    <a href="/" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> На главную</a>
+    <a href="<?= route_url('/') ?>" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> На главную</a>
 </div>
 <div class="card border-0 shadow-sm mx-auto" style="max-width:400px">
     <div class="card-body">
         <h2 class="h5 mb-4">Новый пароль</h2>
         <?php if ($error): ?>
         <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-        <a href="/forgot-password" class="btn btn-outline-primary">Запросить снова</a>
+        <a href="<?= route_url('/forgot-password') ?>" class="btn btn-outline-primary">Запросить снова</a>
         <?php else: ?>
         <div id="resetError" class="alert alert-danger d-none"></div>
         <form id="resetForm"><?= csrf_field() ?>

@@ -229,8 +229,11 @@ class SeoService
             $base = $scheme . '://' . $host;
         }
 
-        $path = '/' . ltrim($path, '/');
-        $url = $base . $path;
+        $normalizedPath = '/' . ltrim($path, '/');
+        if (function_exists('route_url')) {
+            $normalizedPath = route_url($normalizedPath);
+        }
+        $url = $base . $normalizedPath;
         if ($query !== []) {
             $url .= '?' . http_build_query($query);
         }

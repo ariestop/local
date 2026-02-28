@@ -10,8 +10,8 @@ $flashError = trim((string) ($flashError ?? ''));
 <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <h1 class="h4 mb-0">Миграции базы данных</h1>
     <div class="d-flex gap-2">
-        <a href="/admin" class="btn btn-sm btn-outline-secondary">Админ-панель</a>
-        <a href="/" class="btn btn-sm btn-outline-secondary">На главную</a>
+        <a href="<?= route_url('/admin') ?>" class="btn btn-sm btn-outline-secondary">Админ-панель</a>
+        <a href="<?= route_url('/') ?>" class="btn btn-sm btn-outline-secondary">На главную</a>
     </div>
 </div>
 
@@ -52,7 +52,7 @@ $flashError = trim((string) ($flashError ?? ''));
         <div class="col-md-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <form method="post" action="/admin-migrations/apply-next" class="m-0">
+                    <form method="post" action="<?= route_url('/admin-migrations/apply-next') ?>" class="m-0">
                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <button type="submit" class="btn btn-primary w-100" onclick="return confirm('Применить следующую миграцию?')" <?= ((int) ($status['pending_count'] ?? 0) === 0) ? 'disabled' : '' ?>>
                             Применить следующую миграцию
@@ -89,7 +89,7 @@ $flashError = trim((string) ($flashError ?? ''));
                             </td>
                             <td class="text-end">
                                 <?php if (!$isApplied): ?>
-                                    <form method="post" action="/admin-migrations/apply" class="d-inline">
+                                    <form method="post" action="<?= route_url('/admin-migrations/apply') ?>" class="d-inline">
                                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                                         <input type="hidden" name="migration" value="<?= htmlspecialchars((string) ($row['name'] ?? '')) ?>">
                                         <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('Применить миграцию <?= htmlspecialchars((string) ($row['name'] ?? '')) ?>?')">Применить</button>

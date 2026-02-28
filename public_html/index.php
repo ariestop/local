@@ -17,6 +17,9 @@ $hasRuntimeScriptName = trim($rawScriptName) !== '';
 $basePath = $hasRuntimeScriptName
     ? (($scriptDir !== '' && $scriptDir !== '/') ? $scriptDir : '')
     : $configuredBasePath;
+$useFrontControllerUrls = !empty($config['app']['use_front_controller_urls']);
+$scriptEntry = $hasRuntimeScriptName ? ('/' . ltrim($scriptName, '/')) : '';
+$scriptEntry = rtrim($scriptEntry, '/');
 
 $appEnv = $config['app']['env'] ?? $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: 'production';
 
@@ -49,13 +52,22 @@ if (($security['headers_enabled'] ?? true) && !headers_sent()) {
 
 // Debug Bar init (только APP_ENV=dev)
 if (function_exists('init_debugbar')) {
-    $GLOBALS['_debugbar_renderer'] = init_debugbar($basePath ?: '/', $appEnv);
+    $debugbarBasePath = ($useFrontControllerUrls && $scriptEntry !== '')
+        ? $scriptEntry
+        : ($basePath ?: '/');
+    $GLOBALS['_debugbar_renderer'] = init_debugbar($debugbarBasePath, $appEnv);
 }
 
 // Serve DebugBar assets (только при APP_ENV=dev)
 if ($appEnv === 'dev') {
     $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-    $path = $basePath && str_starts_with((string) $uri, $basePath) ? substr((string) $uri, strlen($basePath)) : $uri;
+    $path = (string) ($uri ?: '/');
+    if ($basePath !== '' && str_starts_with($path, $basePath)) {
+        $path = substr($path, strlen($basePath)) ?: '/';
+    }
+    if ($useFrontControllerUrls && $scriptEntry !== '' && str_starts_with($path, $scriptEntry)) {
+        $path = substr($path, strlen($scriptEntry)) ?: '/';
+    }
     if (str_starts_with($path, '/debugbar/')) {
         $file = $root . '/vendor/php-debugbar/php-debugbar/resources' . substr($path, 9);
         $vendorReal = realpath($root . '/vendor/php-debugbar');

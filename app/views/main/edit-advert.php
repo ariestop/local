@@ -5,14 +5,14 @@ $total = (int) ($total ?? 0);
 $qs = static fn(array $over = []): string => http_build_query(array_merge($_GET, $over));
 ?>
 <div class="mb-4">
-    <a href="/" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> К списку</a>
+    <a href="<?= route_url('/') ?>" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> К списку</a>
 </div>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h4 mb-1">Мои объявления</h1>
         <div class="small text-muted">Всего объявлений: <?= number_format($total, 0, '', ' ') ?></div>
     </div>
-    <a href="/add" class="btn btn-primary">Добавить объявление</a>
+    <a href="<?= route_url('/add') ?>" class="btn btn-primary">Добавить объявление</a>
 </div>
 
 <div class="card border-0 shadow-sm posts-mobile">
@@ -33,7 +33,7 @@ $qs = static fn(array $over = []): string => http_build_query(array_merge($_GET,
             <tbody>
                 <?php if (empty($posts)): ?>
                 <tr>
-                    <td colspan="8" class="text-muted text-center py-4">У вас пока нет объявлений. <a href="/add">Добавить объявление</a></td>
+                    <td colspan="8" class="text-muted text-center py-4">У вас пока нет объявлений. <a href="<?= route_url('/add') ?>">Добавить объявление</a></td>
                 </tr>
                 <?php else: ?>
                 <?php foreach ($posts as $p): ?>
@@ -43,7 +43,7 @@ $qs = static fn(array $over = []): string => http_build_query(array_merge($_GET,
                     <td data-label="Действие"><?= htmlspecialchars($p['action_name']) ?></td>
                     <td data-label="Объект"><?= htmlspecialchars($p['object_name']) ?></td>
                     <td data-label="Адрес">
-                        <a href="/detail/<?= (int)$p['id'] ?>" class="text-dark text-decoration-none"><?= htmlspecialchars($p['city_name'] . ', ' . $p['area_name'] . ' р-н., ' . $p['street']) ?></a>
+                        <a href="<?= route_url('/detail/' . (int)$p['id']) ?>" class="text-dark text-decoration-none"><?= htmlspecialchars($p['city_name'] . ', ' . $p['area_name'] . ' р-н., ' . $p['street']) ?></a>
                     </td>
                     <td data-label="Комнат"><?= (int)$p['room'] ?></td>
                     <td data-label="М²"><?= (int)$p['m2'] ?></td>
@@ -58,7 +58,7 @@ $qs = static fn(array $over = []): string => http_build_query(array_merge($_GET,
                         </div>
                     </td>
                     <td data-label="Действия" class="d-flex gap-1 flex-wrap">
-                        <a href="/edit/<?= (int)$p['id'] ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Редактировать</a>
+                        <a href="<?= route_url('/edit/' . (int)$p['id']) ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Редактировать</a>
                         <?php if ($isArchived): ?>
                             <button type="button" class="btn btn-outline-success btn-sm btn-restore-post" data-id="<?= (int)$p['id'] ?>"><i class="bi bi-arrow-counterclockwise"></i> Восстановить</button>
                         <?php else: ?>

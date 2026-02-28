@@ -20,6 +20,7 @@ return [
         'name' => 'Квадратный метр',
         'url' => $env('APP_URL', 'http://localhost:8888/local/public_html'),
         'env' => $env('APP_ENV', 'production'),
+        'use_front_controller_urls' => $envBool('APP_USE_FRONT_CONTROLLER_URLS', '0'),
         'email_confirm_required' => $envBool('EMAIL_CONFIRM_REQUIRED', '0'),
         'allow_legacy_password_login' => $envBool('AUTH_ALLOW_LEGACY_PASSWORD', '1'),
         'timezone' => 'Europe/Moscow',

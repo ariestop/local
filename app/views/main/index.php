@@ -15,7 +15,7 @@ $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort]
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h1 class="h4 mb-0">Продажа недвижимости</h1>
     <?php if ($user): ?>
-    <a href="/add" class="btn btn-primary">Добавить объявление</a>
+    <a href="<?= route_url('/add') ?>" class="btn btn-primary">Добавить объявление</a>
     <?php else: ?>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#loginModal" data-bs-whatever="add">Добавить объявление</button>
     <?php endif; ?>
@@ -38,7 +38,7 @@ $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort]
                 <?php if (!empty($popularPosts)): ?>
                     <div class="list-group list-group-flush">
                         <?php foreach ($popularPosts as $pp): ?>
-                            <a class="list-group-item list-group-item-action px-0" href="/detail/<?= (int)$pp['id'] ?>">
+                            <a class="list-group-item list-group-item-action px-0" href="<?= route_url('/detail/' . (int)$pp['id']) ?>">
                                 <div class="small fw-semibold"><?= htmlspecialchars($pp['action_name'] . ' ' . $pp['object_name']) ?></div>
                                 <div class="small text-muted"><?= htmlspecialchars($pp['city_name'] . ', ' . $pp['street']) ?></div>
                                 <div class="small">Просмотры: <?= number_format((int)($pp['view_count'] ?? 0), 0, '', ' ') ?></div>
@@ -84,7 +84,7 @@ $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort]
         <!-- Фильтры и сортировка -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body py-3">
-                <form method="get" action="/" class="row g-2 align-items-end" id="filterForm">
+                <form method="get" action="<?= route_url('/') ?>" class="row g-2 align-items-end" id="filterForm">
                     <div class="col-md-2 col-6">
                         <label class="form-label small mb-0">Тип</label>
                         <select name="action_id" class="form-select form-select-sm">
@@ -176,7 +176,7 @@ $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort]
                             <td data-label="Действие"><?= htmlspecialchars($p['action_name']) ?></td>
                             <td data-label="Объект"><?= htmlspecialchars($p['object_name']) ?></td>
                             <td data-label="Адрес">
-                                <a href="/detail/<?= (int)$p['id'] ?>" class="text-dark text-decoration-none"><?= htmlspecialchars($p['city_name'] . ', ' . $p['area_name'] . ' р-н., ' . $p['street']) ?></a>
+                                <a href="<?= route_url('/detail/' . (int)$p['id']) ?>" class="text-dark text-decoration-none"><?= htmlspecialchars($p['city_name'] . ', ' . $p['area_name'] . ' р-н., ' . $p['street']) ?></a>
                             </td>
                             <td data-label="Комнат"><?= (int)$p['room'] ?></td>
                             <td data-label="М²"><?= (int)$p['m2'] ?></td>

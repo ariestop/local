@@ -4,7 +4,7 @@ $pid = (int)($post['id'] ?? 0);
 $photos = $photos ?? [];
 ?>
 <div class="mb-4">
-    <a href="/edit-advert" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> К моим объявлениям</a>
+    <a href="<?= route_url('/edit-advert') ?>" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left"></i> К моим объявлениям</a>
 </div>
 <div class="card border-0 shadow-sm">
     <div class="card-body">
@@ -105,7 +105,7 @@ $photos = $photos ?? [];
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Сохранить</button>
                     <button type="button" class="btn btn-outline-secondary ms-2" id="clearEditDraftBtn">Очистить черновик</button>
-                    <a href="/edit-advert" class="btn btn-outline-secondary ms-2">Отмена</a>
+                    <a href="<?= route_url('/edit-advert') ?>" class="btn btn-outline-secondary ms-2">Отмена</a>
                 </div>
             </div>
         </form>

@@ -20,13 +20,6 @@ class SeoController extends Controller
 
     public function sitemap(): void
     {
-        $base = rtrim((string) ($this->config['app']['url'] ?? ''), '/');
-        if ($base === '') {
-            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-            $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
-            $base = $scheme . '://' . $host;
-        }
-
         $posts = $this->postService->getActiveForSitemap(50000);
         $filters = $this->postService->getActiveSitemapFilterValues(200);
 
@@ -37,12 +30,12 @@ class SeoController extends Controller
         $xml->writeAttribute('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9');
 
         $xml->startElement('url');
-        $xml->writeElement('loc', $base . '/');
+        $xml->writeElement('loc', $this->absoluteUrl('/'));
         $xml->writeElement('changefreq', 'hourly');
         $xml->writeElement('priority', '1.0');
         $xml->endElement();
 
-        foreach ($this->buildFilterUrls($base, $filters) as $filterUrl) {
+        foreach ($this->buildFilterUrls($filters) as $filterUrl) {
             $xml->startElement('url');
             $xml->writeElement('loc', $filterUrl);
             $xml->writeElement('changefreq', 'daily');
@@ -56,7 +49,7 @@ class SeoController extends Controller
                 continue;
             }
             $xml->startElement('url');
-            $xml->writeElement('loc', $base . '/detail/' . $id);
+            $xml->writeElement('loc', $this->absoluteUrl('/detail/' . $id));
             $lastmod = (string) ($post['created_at'] ?? '');
             if ($lastmod !== '') {
                 $xml->writeElement('lastmod', date('c', strtotime($lastmod)));
@@ -73,7 +66,7 @@ class SeoController extends Controller
         echo $xml->outputMemory();
     }
 
-    private function buildFilterUrls(string $base, array $filters): array
+    private function buildFilterUrls(array $filters): array
     {
         $urls = [];
         $append = static function (array &$collector, string $url): void {
@@ -83,21 +76,21 @@ class SeoController extends Controller
         foreach (($filters['city_ids'] ?? []) as $cityId) {
             $cityId = (int) $cityId;
             if ($cityId > 0) {
-                $append($urls, $base . '/?' . http_build_query(['city_id' => $cityId]));
+                $append($urls, $this->absoluteUrl('/', ['city_id' => $cityId]));
             }
         }
 
         foreach (($filters['action_ids'] ?? []) as $actionId) {
             $actionId = (int) $actionId;
             if ($actionId > 0) {
-                $append($urls, $base . '/?' . http_build_query(['action_id' => $actionId]));
+                $append($urls, $this->absoluteUrl('/', ['action_id' => $actionId]));
             }
         }
 
         foreach (($filters['rooms'] ?? []) as $room) {
             $room = (int) $room;
             if ($room > 0) {
-                $append($urls, $base . '/?' . http_build_query(['room' => $room]));
+                $append($urls, $this->absoluteUrl('/', ['room' => $room]));
             }
         }
 
@@ -108,7 +101,7 @@ class SeoController extends Controller
             if ($cityId <= 0 || $actionId <= 0 || $room <= 0) {
                 continue;
             }
-            $append($urls, $base . '/?' . http_build_query([
+            $append($urls, $this->absoluteUrl('/', [
                 'city_id' => $cityId,
                 'action_id' => $actionId,
                 'room' => $room,
@@ -116,5 +109,26 @@ class SeoController extends Controller
         }
 
         return array_keys($urls);
+    }
+
+    private function absoluteUrl(string $path, array $query = []): string
+    {
+        $base = rtrim((string) ($this->config['app']['url'] ?? ''), '/');
+        if ($base === '') {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+            $base = $scheme . '://' . $host;
+        }
+
+        $normalizedPath = '/' . ltrim($path, '/');
+        if (function_exists('route_url')) {
+            $normalizedPath = route_url($normalizedPath);
+        }
+
+        $url = $base . $normalizedPath;
+        if ($query !== []) {
+            $url .= '?' . http_build_query($query);
+        }
+        return $url;
     }
 }
