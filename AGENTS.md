@@ -33,6 +33,7 @@ app/
   debugbar.php    — PHP Debug Bar (при APP_ENV=dev)
   views/          — layout.php + main/*.php
   helpers.php     — photo_thumb_url(), photo_large_url()
+                    route_url() — внутренние ссылки с учётом APP_USE_FRONT_CONTROLLER_URLS
 public_html/
   index.php              — точка входа, роутинг
   assets/api.js          — apiPost, showToast, showError, hideError, setButtonLoading, validateCostInForm
@@ -118,7 +119,9 @@ public_html/
 
 ## Конфиг и миграции
 
-- `.env` / `.env.local`: APP_ENV (dev/production), DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, APP_URL
+- `.env` / `.env.local`: APP_ENV (dev/production), DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, APP_URL, APP_USE_FRONT_CONTROLLER_URLS
+- `APP_USE_FRONT_CONTROLLER_URLS=0` — чистые URL (`/detail/{id}`), нужен mod_rewrite
+- `APP_USE_FRONT_CONTROLLER_URLS=1` — URL через front-controller (`/index.php/detail/{id}`), для окружений без rewrite
 - `APP_ENV=dev` — включает PHP Debug Bar (только для разработки!)
 - `php install.php` — безопасный install/update скрипт:
   - 1-й запуск: создаёт БД, импортирует `public_html/infosee2_m2sar.sql`, затем применяет миграции;

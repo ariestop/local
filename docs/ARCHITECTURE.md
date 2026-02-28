@@ -79,7 +79,7 @@
 3. Post::create() → id
 4. ImageService::upload() → массив filename/sort_order
 5. PostPhoto::addBatch()
-6. JSON {success, id} → redirect /detail/{id}
+6. JSON {success, id} → redirect через `withBasePath('/detail/{id}')` (учёт front-controller режима)
 
 ### Редактирование
 
@@ -88,7 +88,7 @@
 3. Post::update()
 4. Удаление выбранных фото (PostPhoto + ImageService)
 5. Загрузка новых фото (с учётом лимита 5)
-6. JSON {success, id} → redirect /detail/{id}
+6. JSON {success, id} → redirect через `withBasePath('/detail/{id}')` (учёт front-controller режима)
 
 ### Удаление
 

@@ -19,13 +19,14 @@ mysql --version
 
 git clone https://github.com/ariestop/local.git
 cd local
-git checkout feature/edit-advert-and-delete
 git pull
 
 
 3) Установите PHP-зависимости
 
 composer install
+# если composer не установлен глобально:
+php composer.phar install
 
 
 4) Запустите MySQL
@@ -51,6 +52,10 @@ cp .env.example .env
 - DB_USER=root
 - DB_PASSWORD= (или ваш пароль)
 - APP_URL=http://localhost:8000
+- APP_USE_FRONT_CONTROLLER_URLS=0
+
+Если сервер без mod_rewrite, установите:
+- APP_USE_FRONT_CONTROLLER_URLS=1
 
 Важно:
 Если задаёте SECURITY_CSP вручную, значение должно быть в двойных кавычках.
@@ -75,7 +80,8 @@ http://localhost:8000
 
 8) Обновление проекта в будущем
 
-git checkout feature/edit-advert-and-delete
 git pull
 composer install
+# или, если глобального composer нет:
+php composer.phar install
 php install.php
