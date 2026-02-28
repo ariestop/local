@@ -89,7 +89,7 @@ public_html/
 
 Путь: `public_html/images/{user_id}/{post_id}/`  
 Файлы: `{base}_{w}x{h}.{ext}` — например `1_xxx_200x150.jpg`, `1_xxx_1200x675.jpg`.  
-Разрешения: JPEG, PNG, GIF, WebP. До 10 фото на объявление, до 5 МБ на файл.
+Разрешения загрузки: JPEG, PNG (server-side MIME validation). До 10 фото на объявление, до 5 МБ на файл.
 
 ## AJAX и frontend
 
@@ -129,6 +129,10 @@ public_html/
 - `php cron.php expire-posts` — CLI-обработка истёкших объявлений (auto-archive + email-уведомления).
 - Если планировщик задач недоступен, используйте fallback через `/admin` (ручной запуск батчами с прогрессом).
 - Новые миграции: добавляйте файлы `NNN_название.sql` или `NNN_название.php` в `migrations/` — install.php применяет только те, которых нет в `schema_migrations`
+- CI quality gates:
+ - `.github/workflows/ci.yml` запускается на `pull_request` и `push` в `main`;
+ - обязательные шаги: `composer validate --strict`, `composer audit`, `composer test:unit`, `composer test:integration`;
+ - `phpunit.xml` блокирует сборку при `PHPUnit notice/deprecation` (`failOnPhpunitNotice`, `failOnPhpunitDeprecation`).
 
 ## Тестовый вход
 
