@@ -36,11 +36,14 @@ final class UserControllerTest extends TestCase
             'password' => 'secret',
             'csrf_token' => $this->issueCsrfToken(),
         ];
+        $sessionBefore = session_id();
 
         $response = $this->invokeAndDecode(fn() => $controller->login());
+        $sessionAfter = session_id();
 
         $this->assertTrue((bool) ($response['json']['success'] ?? false));
         $this->assertSame(7, $response['json']['user']['id'] ?? null);
+        $this->assertNotSame($sessionBefore, $sessionAfter);
     }
 
     public function testLoginWithoutCsrfReturns403Contract(): void

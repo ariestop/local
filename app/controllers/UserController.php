@@ -46,8 +46,7 @@ class UserController extends Controller
             $this->jsonError($result['error'] ?? 'Ошибка', (int) ($result['code'] ?? 400));
             return;
         }
-        ensure_session();
-        $_SESSION['user'] = $result['user'];
+        $this->establishAuthenticatedSession($result['user']);
         $this->json(['success' => true, 'user' => $result['user']]);
     }
 
@@ -78,10 +77,7 @@ class UserController extends Controller
         }
         unset($_SESSION['captcha']);
         if (empty($result['email_confirm_required'])) {
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start();
-            }
-            $_SESSION['user'] = $result['user'];
+            $this->establishAuthenticatedSession($result['user']);
             $this->json(['success' => true, 'message' => 'Регистрация успешна', 'user' => $result['user']]);
         } else {
             $this->json(['success' => true, 'message' => 'Проверьте почту для подтверждения регистрации']);
@@ -100,8 +96,7 @@ class UserController extends Controller
             $this->render('main/verify-email', ['success' => false, 'error' => $result['error']]);
             return;
         }
-        ensure_session();
-        $_SESSION['user'] = $result['user'];
+        $this->establishAuthenticatedSession($result['user']);
         $this->render('main/verify-email', ['success' => true]);
     }
 
@@ -167,8 +162,7 @@ class UserController extends Controller
             $this->jsonError($result['error'] ?? 'Ошибка', (int) ($result['code'] ?? 400));
             return;
         }
-        ensure_session();
-        $_SESSION['user'] = $result['user'];
+        $this->establishAuthenticatedSession($result['user']);
         $this->json(['success' => true, 'message' => 'Пароль изменён']);
     }
 
@@ -183,5 +177,12 @@ class UserController extends Controller
     {
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         return 'user:' . $scope . ':' . $ip;
+    }
+
+    private function establishAuthenticatedSession(array $user): void
+    {
+        ensure_session();
+        session_regenerate_id(true);
+        $_SESSION['user'] = $user;
     }
 }
