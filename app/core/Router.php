@@ -50,11 +50,7 @@ class Router
     public function dispatch(): void
     {
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-        $path = '/' . trim($path, '/');
-        if ($path === '') {
-            $path = '/';
-        }
+        $path = $this->normalizePath((string) (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/'));
 
         // Compatibility for setups without mod_rewrite: /index.php/... should route as /...
         if ($path === '/index.php') {
@@ -67,28 +63,123 @@ class Router
             ? $this->basePath
             : rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/');
         if ($base !== '' && $base !== '/' && str_starts_with($path, $base)) {
-            $path = substr($path, strlen($base)) ?: '/';
+            $path = $this->normalizePath((string) (substr($path, strlen($base)) ?: '/'));
         }
 
-        $handlers = $this->routes[$method] ?? [];
-        foreach ($handlers as $route => $handler) {
-            $pattern = '#^' . preg_replace('#\{[^}]+\}#', '([^/]+)', $route) . '$#';
-            if (preg_match($pattern, $path, $matches)) {
-                array_shift($matches);
-                [$controller, $action] = $handler;
-                $instance = $this->container?->get($controller) ?? new $controller();
-                $instance->{$action}(...$matches);
+        $match = $this->matchRouteForMethod($method, $path);
+        if ($match !== null) {
+            if ($this->invokeHandler($match['handler'], $match['params'])) {
                 return;
             }
+            $this->respondNotFound();
+            return;
         }
 
+        $allowedMethods = $this->detectAllowedMethodsForPath($path);
+        if ($allowedMethods !== []) {
+            $this->respondMethodNotAllowed($allowedMethods);
+            return;
+        }
+
+        $this->respondNotFound();
+    }
+
+    private function normalizePath(string $path): string
+    {
+        $normalized = '/' . trim($path, '/');
+        return $normalized === '' ? '/' : $normalized;
+    }
+
+    /**
+     * @return array{handler: array{0: string, 1: string}, params: array<int, string>}|null
+     */
+    private function matchRouteForMethod(string $method, string $path): ?array
+    {
+        $handlers = $this->routes[$method] ?? [];
+        foreach ($handlers as $route => $handler) {
+            $pattern = $this->compileRoutePattern($route);
+            if (preg_match($pattern, $path, $matches) !== 1) {
+                continue;
+            }
+            array_shift($matches);
+            return [
+                'handler' => $handler,
+                'params' => array_map(static fn(mixed $v): string => (string) $v, $matches),
+            ];
+        }
+        return null;
+    }
+
+    private function compileRoutePattern(string $route): string
+    {
+        $parts = preg_split('/(\{[^}]+\})/', $route, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [];
+        $pattern = '';
+        foreach ($parts as $part) {
+            if ($part === '') {
+                continue;
+            }
+            if (preg_match('/^\{[^}]+\}$/', $part) === 1) {
+                $pattern .= '([^/]+)';
+                continue;
+            }
+            $pattern .= preg_quote($part, '#');
+        }
+        return '#^' . $pattern . '$#';
+    }
+
+    /**
+     * @param array{0: string, 1: string} $handler
+     * @param array<int, string> $params
+     */
+    private function invokeHandler(array $handler, array $params): bool
+    {
+        [$controller, $action] = $handler;
+        if (!class_exists($controller)) {
+            return false;
+        }
+        $instance = $this->container?->get($controller) ?? new $controller();
+        if (!method_exists($instance, $action) || !is_callable([$instance, $action])) {
+            return false;
+        }
+        $instance->{$action}(...$params);
+        return true;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function detectAllowedMethodsForPath(string $path): array
+    {
+        $allowed = [];
+        foreach (array_keys($this->routes) as $method) {
+            if ($this->matchRouteForMethod($method, $path) !== null) {
+                $allowed[] = $method;
+            }
+        }
+        return $allowed;
+    }
+
+    private function respondNotFound(): void
+    {
         http_response_code(404);
         header('Content-Type: text/html; charset=utf-8');
         $viewFile = dirname(__DIR__, 2) . '/app/views/404.php';
         if (file_exists($viewFile)) {
             require $viewFile;
-        } else {
-            echo '404 Not Found';
+            return;
         }
+        echo '404 Not Found';
+    }
+
+    /**
+     * @param array<int, string> $allowedMethods
+     */
+    private function respondMethodNotAllowed(array $allowedMethods): void
+    {
+        $allowed = implode(', ', array_values(array_unique($allowedMethods)));
+        http_response_code(405);
+        header('Allow: ' . $allowed);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo '405 Method Not Allowed';
     }
 }
