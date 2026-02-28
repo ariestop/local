@@ -6,20 +6,9 @@ $root = dirname(__DIR__);
 $container = require $root . '/app/bootstrap.php';
 
 $config = $container->getConfig();
-$configuredBasePath = rtrim(parse_url($config['app']['url'] ?? '', PHP_URL_PATH) ?: '', '/');
-$rawScriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
-$scriptName = str_replace('\\', '/', $rawScriptName);
-$scriptDir = rtrim(dirname($scriptName), '/');
-if ($scriptDir === '.' || $scriptDir === '/.') {
-    $scriptDir = '';
-}
-$hasRuntimeScriptName = trim($rawScriptName) !== '';
-$basePath = $hasRuntimeScriptName
-    ? (($scriptDir !== '' && $scriptDir !== '/') ? $scriptDir : '')
-    : $configuredBasePath;
-$useFrontControllerUrls = !empty($config['app']['use_front_controller_urls']);
-$scriptEntry = $hasRuntimeScriptName ? ('/' . ltrim($scriptName, '/')) : '';
-$scriptEntry = rtrim($scriptEntry, '/');
+$basePath = app_base_path();
+$useFrontControllerUrls = use_front_controller_urls();
+$scriptEntry = app_entry_path();
 
 $appEnv = $config['app']['env'] ?? $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: 'production';
 

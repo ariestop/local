@@ -16,17 +16,16 @@
     }
 
     function appRequestPrefix() {
+        const serverPrefix = (document.querySelector('meta[name="app-request-prefix"]')?.content || '').trim();
+        if (serverPrefix) {
+            return serverPrefix.replace(/\/+$/, '');
+        }
         if (!useFrontControllerUrls()) {
             return appBasePath();
         }
         const entry = (document.querySelector('meta[name="app-entry"]')?.content || '').trim();
         if (entry) {
             return entry.replace(/\/+$/, '');
-        }
-        const pathname = String(window.location.pathname || '');
-        const fcPos = pathname.indexOf('/index.php');
-        if (fcPos !== -1) {
-            return pathname.slice(0, fcPos + '/index.php'.length).replace(/\/+$/, '');
         }
         return appBasePath();
     }

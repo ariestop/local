@@ -22,7 +22,63 @@ class ImageService
     public function upload(int $userId, int $postId, array $files, ?int $maxFiles = null): array
     {
         $maxFiles = $maxFiles ?? self::MAX_FILES;
-        $dir = rtrim($this->basePath, '/') . "/{$userId}/{$postId}";
+        $dir = $this->resolveTargetDir($userId, $postId);
+        return $this->uploadToDir($dir, $files, $maxFiles);
+    }
+
+    /**
+     * Upload images to an isolated staging directory.
+     *
+     * @return array{staging_dir: string, photos: array<int, array{filename: string, sort_order: int}>}
+     */
+    public function stageUpload(int $userId, int $postId, array $files, ?int $maxFiles = null): array
+    {
+        $maxFiles = $maxFiles ?? self::MAX_FILES;
+        $stagingDir = $this->createStagingDir($userId, $postId);
+        $photos = $this->uploadToDir($stagingDir, $files, $maxFiles);
+        return [
+            'staging_dir' => $stagingDir,
+            'photos' => $photos,
+        ];
+    }
+
+    /**
+     * Move processed staged files to final post directory.
+     */
+    public function promoteStaged(string $stagingDir, int $userId, int $postId): void
+    {
+        if (!is_dir($stagingDir)) {
+            return;
+        }
+        $targetDir = $this->resolveTargetDir($userId, $postId);
+        $entries = array_diff(scandir($stagingDir) ?: [], ['.', '..']);
+        foreach ($entries as $entry) {
+            $from = $stagingDir . '/' . $entry;
+            if (!is_file($from)) {
+                continue;
+            }
+            $to = $targetDir . '/' . $entry;
+            if (!@rename($from, $to)) {
+                @copy($from, $to);
+                @unlink($from);
+            }
+        }
+        @rmdir($stagingDir);
+    }
+
+    /**
+     * Best-effort cleanup for staging directories.
+     */
+    public function cleanupStaged(string $stagingDir): void
+    {
+        $this->deleteDirRecursive($stagingDir);
+    }
+
+    /**
+     * @return array<int, array{filename: string, sort_order: int}>
+     */
+    private function uploadToDir(string $dir, array $files, int $maxFiles): array
+    {
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
@@ -50,6 +106,18 @@ class ImageService
             }
         }
         return $uploaded;
+    }
+
+    private function resolveTargetDir(int $userId, int $postId): string
+    {
+        return rtrim($this->basePath, '/') . "/{$userId}/{$postId}";
+    }
+
+    private function createStagingDir(int $userId, int $postId): string
+    {
+        $target = $this->resolveTargetDir($userId, $postId);
+        $token = bin2hex(random_bytes(8));
+        return $target . '/.staging_' . $token;
     }
 
     private function processImage(string $dir, string $filename, string $path): void
@@ -236,5 +304,22 @@ class ImageService
                 @unlink($p);
             }
         }
+    }
+
+    private function deleteDirRecursive(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+        $entries = array_diff(scandir($dir) ?: [], ['.', '..']);
+        foreach ($entries as $entry) {
+            $path = $dir . '/' . $entry;
+            if (is_dir($path)) {
+                $this->deleteDirRecursive($path);
+                continue;
+            }
+            @unlink($path);
+        }
+        @rmdir($dir);
     }
 }

@@ -22,9 +22,13 @@ final class PostServiceCrudTest extends TestCase
         $db = new \PDO('sqlite::memory:');
 
         $postRepo->method('create')->willReturn(101);
-        $imageService->method('upload')->willReturn([
-            ['filename' => '1_x.jpg', 'sort_order' => 0],
+        $imageService->method('stageUpload')->willReturn([
+            'staging_dir' => '/tmp/stage_1',
+            'photos' => [
+                ['filename' => '1_x.jpg', 'sort_order' => 0],
+            ],
         ]);
+        $imageService->expects($this->once())->method('promoteStaged')->with('/tmp/stage_1', 7, 101);
         $photoRepo->expects($this->once())->method('addBatch')->with(
             101,
             [['filename' => '1_x.jpg', 'sort_order' => 0]]

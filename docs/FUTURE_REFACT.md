@@ -19,7 +19,7 @@
    - безопасная компиляция route-regex,
    - проверка существования action до вызова,
    - единая обработка 404/405.
-2. Исправить неатомарность «БД + файловая система» в `app/services/PostService.php` и `app/services/ImageService.php` (оценка: **L**):
+2. ✅ Исправить неатомарность «БД + файловая система» в `app/services/PostService.php` и `app/services/ImageService.php` (оценка: **L**, выполнено):
    - staging для файлов,
    - перенос/удаление только после успешного commit,
    - компенсационные действия при ошибках.
@@ -31,7 +31,7 @@
    - `session_regenerate_id(true)` после успешной аутентификации.
 
 ### P1 — архитектурная консистентность
-5. Унифицировать URL-логику (оценка: **M**):
+5. ✅ Унифицировать URL-логику (оценка: **M**, выполнено):
    - PHP: `app/helpers.php`, `public_html/index.php`, `app/services/SeoService.php`, `app/controllers/SeoController.php`,
    - JS: `public_html/assets/api.js`,
    - цель: единый resolver режима URL и единые правила построения ссылок.

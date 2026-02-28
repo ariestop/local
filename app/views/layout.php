@@ -5,25 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
     <?php
-    $rawScriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
-    $scriptName = str_replace('\\', '/', $rawScriptName);
-    $runtimeBase = rtrim(dirname($scriptName), '/');
-    if ($runtimeBase === '.' || $runtimeBase === '/.') {
-        $runtimeBase = '';
-    }
-    $configBase = rtrim(parse_url($config['app']['url'] ?? '', PHP_URL_PATH) ?: '', '/');
-    $hasRuntimeScriptName = trim($rawScriptName) !== '';
-    $appBase = $hasRuntimeScriptName
-        ? (($runtimeBase !== '' && $runtimeBase !== '/') ? $runtimeBase : '')
-        : $configBase;
-    $useFrontControllerUrls = !empty($config['app']['use_front_controller_urls']);
-    $appEntry = $hasRuntimeScriptName ? $scriptName : '';
+    $appBase = app_base_path();
+    $appEntry = app_entry_path();
+    $useFrontControllerUrls = use_front_controller_urls();
+    $appRequestPrefix = app_request_prefix();
     $homeUrl = route_url('/');
     $captchaUrl = route_url('/api/captcha');
     ?>
     <meta name="app-base" content="<?= htmlspecialchars($appBase) ?>">
     <meta name="app-entry" content="<?= htmlspecialchars($appEntry) ?>">
     <meta name="app-front-controller" content="<?= $useFrontControllerUrls ? '1' : '0' ?>">
+    <meta name="app-request-prefix" content="<?= htmlspecialchars($appRequestPrefix) ?>">
     <meta name="app-history-limit" content="<?= (int)($config['app']['history_limit'] ?? 10) ?>">
     <?php
     $siteName = (string) ($config['app']['name'] ?? 'Доска объявлений');

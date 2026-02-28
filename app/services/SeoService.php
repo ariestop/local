@@ -238,21 +238,13 @@ class SeoService
 
     private function buildAbsoluteUrl(string $path, array $query = []): string
     {
-        $base = rtrim((string) ($this->config['app']['url'] ?? ''), '/');
-        if ($base === '') {
-            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-            $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
-            $base = $scheme . '://' . $host;
+        if (function_exists('absolute_url')) {
+            return absolute_url($path, $query, (string) ($this->config['app']['url'] ?? ''));
         }
 
+        $base = rtrim((string) ($this->config['app']['url'] ?? ''), '/');
         $normalizedPath = '/' . ltrim($path, '/');
-        if (function_exists('route_url')) {
-            $normalizedPath = route_url($normalizedPath);
-        }
         $url = $base . $normalizedPath;
-        if ($query !== []) {
-            $url .= '?' . http_build_query($query);
-        }
-        return $url;
+        return $query !== [] ? $url . '?' . http_build_query($query) : $url;
     }
 }

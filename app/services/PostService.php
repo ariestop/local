@@ -109,14 +109,22 @@ class PostService
         }
         $data = $this->normalizePostData($input, $userId, true);
         $id = 0;
+        $stagingDirs = [];
+        $createdPhotoFilenames = [];
         try {
             $this->db->beginTransaction();
             $id = $this->postRepo->create($data);
             $photos = $this->normalizeFilesArray($files['photos'] ?? $files);
             if (!empty($photos['name'][0])) {
-                $uploaded = $this->imageService->upload($userId, $id, $photos);
+                $staged = $this->imageService->stageUpload($userId, $id, $photos);
+                $stagingDirs[] = (string) ($staged['staging_dir'] ?? '');
+                $uploaded = is_array($staged['photos'] ?? null) ? $staged['photos'] : [];
                 if ($uploaded !== []) {
                     $this->photoRepo->addBatch($id, $uploaded);
+                    $createdPhotoFilenames = array_values(array_filter(array_map(
+                        static fn(array $p): string => (string) ($p['filename'] ?? ''),
+                        $uploaded
+                    )));
                 }
             }
             $this->db->commit();
@@ -124,12 +132,28 @@ class PostService
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
+            $this->cleanupStagingDirs($stagingDirs);
             if ($id > 0) {
                 $this->imageService->deletePostFolder($userId, $id);
             }
             $this->logger?->warning('Post create transaction failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
             return ['success' => false, 'error' => 'Не удалось создать объявление', 'code' => 500];
         }
+
+        try {
+            $this->promoteStagingDirs($stagingDirs, $userId, $id);
+        } catch (\Throwable $e) {
+            $this->cleanupStagingDirs($stagingDirs);
+            $this->rollbackCreatedPhotoRows($id, $createdPhotoFilenames);
+            $this->compensateCreatePostFailure($id, $userId);
+            $this->logger?->warning('Post create staging promote failed', [
+                'post_id' => $id,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            return ['success' => false, 'error' => 'Не удалось сохранить фото объявления', 'code' => 500];
+        }
+
         $this->logger?->info('Post created', ['post_id' => $id, 'user_id' => $userId]);
         return ['success' => true, 'id' => $id];
     }
@@ -152,13 +176,16 @@ class PostService
         $data = $this->normalizePostData($input, $userId, false);
         $deletePhotos = is_string($input['delete_photos'] ?? '') ? explode(',', $input['delete_photos']) : ($input['delete_photos'] ?? []);
         $deletePhotos = array_map('trim', array_map('basename', (array) $deletePhotos));
+        $stagingDirs = [];
+        $newPhotoFilenames = [];
+        $photosToDeleteAfterCommit = [];
         try {
             $this->db->beginTransaction();
             $this->postRepo->update($id, $userId, $data);
             foreach ($deletePhotos as $fn) {
                 if ($fn) {
                     $this->photoRepo->deleteByFilename($id, $fn);
-                    $this->imageService->deletePhoto($userId, $id, $fn);
+                    $photosToDeleteAfterCommit[] = $fn;
                 }
             }
             $photoOrder = is_string($input['photo_order'] ?? '') ? explode(',', $input['photo_order']) : [];
@@ -171,11 +198,18 @@ class PostService
             $remainingSlots = max(0, 10 - $currentCount);
             $photos = $this->normalizeFilesArray($files['photos'] ?? $files);
             if (!empty($photos['name'][0]) && $remainingSlots > 0) {
-                $uploaded = $this->imageService->upload($userId, $id, $photos, $remainingSlots);
+                $staged = $this->imageService->stageUpload($userId, $id, $photos, $remainingSlots);
+                $stagingDirs[] = (string) ($staged['staging_dir'] ?? '');
+                $uploaded = is_array($staged['photos'] ?? null) ? $staged['photos'] : [];
                 if ($uploaded !== []) {
                     $maxSort = $this->photoRepo->getMaxSortOrder($id);
                     foreach ($uploaded as $i => $p) {
-                        $this->photoRepo->add($id, $p['filename'], $maxSort + 1 + $i);
+                        $filename = (string) ($p['filename'] ?? '');
+                        if ($filename === '') {
+                            continue;
+                        }
+                        $this->photoRepo->add($id, $filename, $maxSort + 1 + $i);
+                        $newPhotoFilenames[] = $filename;
                     }
                 }
             }
@@ -184,9 +218,37 @@ class PostService
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
+            $this->cleanupStagingDirs($stagingDirs);
             $this->logger?->warning('Post update transaction failed', ['post_id' => $id, 'user_id' => $userId, 'error' => $e->getMessage()]);
             return ['success' => false, 'error' => 'Не удалось сохранить изменения', 'code' => 500];
         }
+
+        try {
+            $this->promoteStagingDirs($stagingDirs, $userId, $id);
+        } catch (\Throwable $e) {
+            $this->cleanupStagingDirs($stagingDirs);
+            $this->rollbackCreatedPhotoRows($id, $newPhotoFilenames);
+            $this->logger?->warning('Post update staging promote failed', [
+                'post_id' => $id,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            return ['success' => false, 'error' => 'Не удалось сохранить новые фото', 'code' => 500];
+        }
+
+        foreach ($photosToDeleteAfterCommit as $fn) {
+            try {
+                $this->imageService->deletePhoto($userId, $id, $fn);
+            } catch (\Throwable $e) {
+                $this->logger?->warning('Post update deferred photo delete failed', [
+                    'post_id' => $id,
+                    'user_id' => $userId,
+                    'filename' => $fn,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $this->logger?->info('Post updated', ['post_id' => $id, 'user_id' => $userId]);
         return ['success' => true, 'id' => $id];
     }
@@ -390,6 +452,73 @@ class PostService
     public function getActiveSitemapFilterValues(int $limit = 200): array
     {
         return $this->postRepo->getActiveSitemapFilterValues($limit);
+    }
+
+    /**
+     * @param array<int, string> $stagingDirs
+     */
+    private function cleanupStagingDirs(array $stagingDirs): void
+    {
+        foreach ($stagingDirs as $stagingDir) {
+            if ($stagingDir === '') {
+                continue;
+            }
+            $this->imageService->cleanupStaged($stagingDir);
+        }
+    }
+
+    /**
+     * @param array<int, string> $stagingDirs
+     */
+    private function promoteStagingDirs(array $stagingDirs, int $userId, int $postId): void
+    {
+        foreach ($stagingDirs as $stagingDir) {
+            if ($stagingDir === '') {
+                continue;
+            }
+            $this->imageService->promoteStaged($stagingDir, $userId, $postId);
+        }
+    }
+
+    /**
+     * @param array<int, string> $filenames
+     */
+    private function rollbackCreatedPhotoRows(int $postId, array $filenames): void
+    {
+        foreach (array_values(array_unique($filenames)) as $filename) {
+            if ($filename === '') {
+                continue;
+            }
+            try {
+                $this->photoRepo->deleteByFilename($postId, $filename);
+            } catch (\Throwable $e) {
+                $this->logger?->warning('Rollback photo rows failed', [
+                    'post_id' => $postId,
+                    'filename' => $filename,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    private function compensateCreatePostFailure(int $postId, int $userId): void
+    {
+        try {
+            $this->db->beginTransaction();
+            $this->photoRepo->deleteByPostId($postId);
+            $this->postRepo->hardDelete($postId);
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            $this->logger?->warning('Create compensation DB cleanup failed', [
+                'post_id' => $postId,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+        $this->imageService->deletePostFolder($userId, $postId);
     }
 
     /**
