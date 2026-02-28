@@ -23,11 +23,14 @@ final class ImageServiceTest extends TestCase
     public function testUploadSkipsFilesWithInvalidMimeType(): void
     {
         $service = new ImageService($this->basePath);
+        $tmp = tempnam($this->basePath, 'bad_');
+        file_put_contents((string) $tmp, "<?php echo 'x';");
         $result = $service->upload(1, 1, [
-            'name' => ['payload.php'],
-            'type' => ['application/x-php'],
-            'tmp_name' => ['/tmp/not-uploaded'],
-            'size' => [512],
+            'name' => ['payload.jpg'],
+            'type' => ['image/jpeg'],
+            'tmp_name' => [$tmp],
+            'error' => [UPLOAD_ERR_OK],
+            'size' => [filesize((string) $tmp) ?: 512],
         ]);
 
         $this->assertSame([], $result);
@@ -39,11 +42,49 @@ final class ImageServiceTest extends TestCase
         $result = $service->upload(1, 1, [
             'name' => ['huge.jpg'],
             'type' => ['image/jpeg'],
-            'tmp_name' => ['/tmp/not-uploaded'],
+            'tmp_name' => [$this->createTempFile('x')],
+            'error' => [UPLOAD_ERR_OK],
             'size' => [ImageService::getMaxSizeBytes() + 1],
         ]);
 
         $this->assertSame([], $result);
+    }
+
+    public function testUploadSkipsFilesWithUploadError(): void
+    {
+        $service = new ImageService($this->basePath);
+        $result = $service->upload(1, 1, [
+            'name' => ['broken.jpg'],
+            'type' => ['image/jpeg'],
+            'tmp_name' => [$this->createTempFile('broken')],
+            'error' => [UPLOAD_ERR_PARTIAL],
+            'size' => [128],
+        ]);
+
+        $this->assertSame([], $result);
+    }
+
+    public function testUploadSkipsUnsupportedWebpEvenWhenClientTypeSaysImage(): void
+    {
+        $service = new ImageService($this->basePath);
+        $tmp = tempnam($this->basePath, 'webp_');
+        file_put_contents((string) $tmp, 'RIFFxxxxWEBPVP8 ');
+        $result = $service->upload(1, 1, [
+            'name' => ['photo.webp'],
+            'type' => ['image/webp'],
+            'tmp_name' => [$tmp],
+            'error' => [UPLOAD_ERR_OK],
+            'size' => [filesize((string) $tmp) ?: 128],
+        ]);
+
+        $this->assertSame([], $result);
+    }
+
+    private function createTempFile(string $contents): string
+    {
+        $tmp = tempnam($this->basePath, 'img_');
+        file_put_contents((string) $tmp, $contents);
+        return (string) $tmp;
     }
 
     private function deleteDir(string $dir): void

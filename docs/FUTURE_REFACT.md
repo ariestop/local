@@ -23,7 +23,7 @@
    - staging для файлов,
    - перенос/удаление только после успешного commit,
    - компенсационные действия при ошибках.
-3. Усилить upload-security в `app/services/ImageService.php` (оценка: **S**):
+3. ✅ Усилить upload-security в `app/services/ImageService.php` (оценка: **S**, выполнено):
    - серверная проверка MIME (`finfo`/`exif_imagetype`),
    - строгая обработка `UPLOAD_ERR_*`,
    - не доверять клиентскому `$_FILES['type']`.

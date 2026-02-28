@@ -6,7 +6,7 @@ namespace App\Services;
 
 class ImageService
 {
-    private const ALLOWED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    private const ALLOWED = ['image/jpeg', 'image/png'];
     private const MAX_SIZE = 5 * 1024 * 1024;
 
     public static function getMaxSizeBytes(): int
@@ -87,16 +87,19 @@ class ImageService
         foreach ($files['name'] ?? [] as $i => $name) {
             if ($count >= $maxFiles) break;
             if (empty($name) || empty($files['tmp_name'][$i])) continue;
-            $type = $files['type'][$i] ?? '';
-            $tmp = $files['tmp_name'][$i];
-            if (!in_array($type, self::ALLOWED, true) || ($files['size'][$i] ?? 0) > self::MAX_SIZE) continue;
-            $ext = match ($type) {
-                'image/jpeg', 'image/jpg' => 'jpg',
-                'image/png' => 'png',
-                'image/gif' => 'gif',
-                'image/webp' => 'webp',
-                default => 'jpg',
-            };
+            $error = (int) ($files['error'][$i] ?? UPLOAD_ERR_NO_FILE);
+            if ($error !== UPLOAD_ERR_OK) continue;
+
+            $tmp = (string) $files['tmp_name'][$i];
+            if (!$this->isUploadedTmpFile($tmp)) continue;
+            if ((int) ($files['size'][$i] ?? 0) > self::MAX_SIZE) continue;
+
+            $detectedMime = $this->detectServerMime($tmp);
+            if ($detectedMime === null || !in_array($detectedMime, self::ALLOWED, true)) continue;
+
+            $ext = $this->extensionFromMime($detectedMime);
+            if ($ext === null) continue;
+
             $filename = ($count + 1) . '_' . uniqid() . '.' . $ext;
             $path = $dir . '/' . $filename;
             if (move_uploaded_file($tmp, $path)) {
@@ -106,6 +109,45 @@ class ImageService
             }
         }
         return $uploaded;
+    }
+
+    private function isUploadedTmpFile(string $tmp): bool
+    {
+        if (is_uploaded_file($tmp)) {
+            return true;
+        }
+        // Allow local files in CLI tests while keeping strict web checks.
+        return PHP_SAPI === 'cli' && is_file($tmp);
+    }
+
+    private function detectServerMime(string $tmp): ?string
+    {
+        if (class_exists(\finfo::class)) {
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($tmp);
+            if (is_string($mime) && $mime !== '') {
+                return strtolower(trim($mime));
+            }
+        }
+        if (function_exists('exif_imagetype')) {
+            $type = @exif_imagetype($tmp);
+            if ($type === IMAGETYPE_JPEG) {
+                return 'image/jpeg';
+            }
+            if ($type === IMAGETYPE_PNG) {
+                return 'image/png';
+            }
+        }
+        return null;
+    }
+
+    private function extensionFromMime(string $mime): ?string
+    {
+        return match ($mime) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            default => null,
+        };
     }
 
     private function resolveTargetDir(int $userId, int $postId): string
