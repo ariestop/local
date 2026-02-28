@@ -54,7 +54,7 @@ $flashError = trim((string) ($flashError ?? ''));
                 <div class="card-body">
                     <form method="post" action="<?= route_url('/admin-migrations/apply-next') ?>" class="m-0">
                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                        <button type="submit" class="btn btn-primary w-100" onclick="return confirm('Применить следующую миграцию?')" <?= ((int) ($status['pending_count'] ?? 0) === 0) ? 'disabled' : '' ?>>
+                        <button type="submit" class="btn btn-primary w-100 js-confirm-submit" data-confirm="Применить следующую миграцию?" <?= ((int) ($status['pending_count'] ?? 0) === 0) ? 'disabled' : '' ?>>
                             Применить следующую миграцию
                         </button>
                     </form>
@@ -92,7 +92,7 @@ $flashError = trim((string) ($flashError ?? ''));
                                     <form method="post" action="<?= route_url('/admin-migrations/apply') ?>" class="d-inline">
                                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                                         <input type="hidden" name="migration" value="<?= htmlspecialchars((string) ($row['name'] ?? '')) ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('Применить миграцию <?= htmlspecialchars((string) ($row['name'] ?? '')) ?>?')">Применить</button>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary js-confirm-submit" data-confirm="<?= htmlspecialchars('Применить миграцию ' . (string) ($row['name'] ?? '') . '?') ?>">Применить</button>
                                     </form>
                                 <?php else: ?>
                                     <button type="button" class="btn btn-sm btn-outline-secondary" disabled>Готово</button>

@@ -182,7 +182,7 @@ $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort]
                         <tr>
                             <td data-label="Фото">
                                 <?php if (!empty($firstPhotos[(int)$p['id']])): ?>
-                                    <img src="<?= photo_thumb_url((int)$p['user_id'], (int)$p['id'], (string)$firstPhotos[(int)$p['id']], 200, 150) ?>" alt="" loading="lazy" decoding="async" style="width:80px;height:60px;object-fit:cover;border-radius:6px;display:block">
+                                    <img src="<?= photo_thumb_url((int)$p['user_id'], (int)$p['id'], (string)$firstPhotos[(int)$p['id']], 200, 150) ?>" alt="<?= htmlspecialchars('Фото объявления: ' . $p['object_name'] . ', ' . $p['street']) ?>" loading="lazy" decoding="async" style="width:80px;height:60px;object-fit:cover;border-radius:6px;display:block">
                                 <?php else: ?>
                                     <svg viewBox="0 0 120 80" role="img" aria-label="Нет фото" style="width:80px;height:60px;display:block;border-radius:6px;background:#f3f4f6">
                                         <rect x="12" y="24" width="96" height="44" rx="6" fill="#e5e7eb"></rect>
@@ -203,11 +203,11 @@ $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort]
                             <?php if ($user): ?>
                             <td data-label="">
                                 <div class="d-flex gap-1 justify-content-end">
-                                <button type="button" class="btn btn-sm btn-favorite <?= in_array((int)$p['id'], $favoriteIds ?? []) ? 'btn-danger' : 'btn-outline-secondary' ?>" data-id="<?= (int)$p['id'] ?>" title="<?= in_array((int)$p['id'], $favoriteIds ?? []) ? 'Убрать из избранного' : 'В избранное' ?>">
+                                <button type="button" class="btn btn-sm btn-favorite <?= in_array((int)$p['id'], $favoriteIds ?? []) ? 'btn-danger' : 'btn-outline-secondary' ?>" data-id="<?= (int)$p['id'] ?>" title="<?= in_array((int)$p['id'], $favoriteIds ?? []) ? 'Убрать из избранного' : 'В избранное' ?>" aria-label="<?= in_array((int)$p['id'], $favoriteIds ?? []) ? 'Убрать из избранного' : 'Добавить в избранное' ?>">
                                     <i class="bi bi-heart<?= in_array((int)$p['id'], $favoriteIds ?? []) ? '-fill' : '' ?>"></i>
                                 </button>
                                 <?php if ($isAdmin): ?>
-                                <button type="button" class="btn btn-sm btn-outline-warning btn-admin-post-action" data-id="<?= (int)$p['id'] ?>" title="Действия с объявлением">
+                                <button type="button" class="btn btn-sm btn-outline-warning btn-admin-post-action" data-id="<?= (int)$p['id'] ?>" title="Действия с объявлением" aria-label="Действия с объявлением #<?= (int)$p['id'] ?>">
                                     <i class="bi bi-gear"></i>
                                 </button>
                                 <?php endif; ?>
@@ -227,11 +227,11 @@ $qs = fn($over = []) => http_build_query(array_merge($filters, ['sort' => $sort]
                     <a class="page-link" href="?<?= $qs(['page' => 1]) ?>" title="Первая страница">1</a>
                 </li>
                 <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-                    <a class="page-link" href="<?= $page > 1 ? '?' . $qs(['page' => $page - 1]) : '#' ?>">‹</a>
+                    <a class="page-link" href="<?= $page > 1 ? '?' . $qs(['page' => $page - 1]) : '#' ?>" aria-label="Предыдущая страница">‹</a>
                 </li>
                 <li class="page-item disabled"><span class="page-link"><?= $page ?> / <?= $totalPages ?></span></li>
                 <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
-                    <a class="page-link" href="<?= $page < $totalPages ? '?' . $qs(['page' => $page + 1]) : '#' ?>">›</a>
+                    <a class="page-link" href="<?= $page < $totalPages ? '?' . $qs(['page' => $page + 1]) : '#' ?>" aria-label="Следующая страница">›</a>
                 </li>
             </ul>
             <div class="d-flex align-items-center gap-1">

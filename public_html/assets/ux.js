@@ -11,6 +11,8 @@
         if (existing) existing.remove();
         var box = document.createElement('div');
         box.id = 'photo-size-overlay';
+        box.setAttribute('role', 'alert');
+        box.setAttribute('aria-live', 'assertive');
         box.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;max-width:90%;padding:16px 24px;background:#dc3545;color:#fff;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-size:14px;font-family:system-ui,sans-serif;';
         box.textContent = msg;
         document.body.appendChild(box);
@@ -68,13 +70,46 @@
     }
 
     // Photo preview (add form)
+    function createPreviewItem(file, onRemove) {
+        const div = document.createElement('div');
+        div.className = 'photo-preview-item';
+        div.draggable = true;
+        div._file = file;
+
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.alt = '';
+        img.draggable = false;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'photo-preview-remove';
+        removeBtn.title = 'Удалить';
+        removeBtn.setAttribute('aria-label', 'Удалить фото');
+        const icon = document.createElement('i');
+        icon.className = 'bi bi-x-lg';
+        removeBtn.appendChild(icon);
+        removeBtn.addEventListener('click', onRemove);
+
+        div.appendChild(img);
+        div.appendChild(removeBtn);
+        return div;
+    }
+
     function initAddPhotoPreview() {
         const form = document.getElementById('addForm');
         const input = form?.querySelector('input[name="photos[]"]');
         if (!form || !input) return;
         const wrap = document.createElement('div');
         wrap.className = 'photo-preview-area';
-        wrap.innerHTML = '<div class="photo-preview-list" id="addPhotoPreviewList"></div><p class="form-text">До 10 фото. Перетащите для сортировки.</p>';
+        const listEl = document.createElement('div');
+        listEl.className = 'photo-preview-list';
+        listEl.id = 'addPhotoPreviewList';
+        const hint = document.createElement('p');
+        hint.className = 'form-text';
+        hint.textContent = 'До 10 фото. Перетащите для сортировки.';
+        wrap.appendChild(listEl);
+        wrap.appendChild(hint);
         input.parentNode.insertBefore(wrap, input);
 
         input.addEventListener('change', function() {
@@ -82,19 +117,12 @@
             list.innerHTML = '';
             const files = Array.from(this.files || []).slice(0, MAX_PHOTOS);
             files.forEach((file, i) => {
-                if (!file.type.match(/^image\/(jpeg|png|gif|webp)/)) return;
-                const div = document.createElement('div');
-                div.className = 'photo-preview-item';
-                div.draggable = true;
-                div.dataset.index = i;
-                div._file = file;
-                div.innerHTML = '<img src="" alt="" draggable="false"><button type="button" class="photo-preview-remove" title="Удалить"><i class="bi bi-x-lg"></i></button>';
-                const img = div.querySelector('img');
-                img.src = URL.createObjectURL(file);
-                div.querySelector('.photo-preview-remove').onclick = () => {
+                if (!file.type.match(/^image\/(jpeg|png)$/)) return;
+                const div = createPreviewItem(file, () => {
                     div.remove();
                     syncAddFormFiles(form);
-                };
+                });
+                div.dataset.index = i;
                 list.appendChild(div);
             });
             initSortable(form, list, false);
@@ -114,8 +142,13 @@
             container = document.createElement('div');
             container.className = 'photo-preview-area-edit';
             const oldBlock = form.querySelector('.d-flex.flex-wrap.gap-2.mb-3');
-            container.innerHTML = '<div class="photo-preview-list photo-preview-list-edit"></div><p class="form-text">Перетащите для сортировки. Первое — главное.</p>';
-            const newList = container.querySelector('.photo-preview-list');
+            const newList = document.createElement('div');
+            newList.className = 'photo-preview-list photo-preview-list-edit';
+            const hint = document.createElement('p');
+            hint.className = 'form-text';
+            hint.textContent = 'Перетащите для сортировки. Первое — главное.';
+            container.appendChild(newList);
+            container.appendChild(hint);
             if (oldBlock) {
                 oldBlock.querySelectorAll('.photo-item').forEach(el => {
                     const img = el.querySelector('img');
@@ -125,7 +158,23 @@
                         div.className = 'photo-preview-item photo-preview-existing';
                         div.dataset.filename = cb.value;
                         div.draggable = true;
-                        div.innerHTML = '<img src="' + img.src + '" alt="" draggable="false"><label class="photo-preview-delete"><input type="checkbox" class="photo-delete" value="' + cb.value + '"> Удалить</label>';
+
+                        const previewImg = document.createElement('img');
+                        previewImg.src = img.src;
+                        previewImg.alt = '';
+                        previewImg.draggable = false;
+
+                        const label = document.createElement('label');
+                        label.className = 'photo-preview-delete';
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.className = 'photo-delete';
+                        checkbox.value = cb.value;
+                        label.appendChild(checkbox);
+                        label.appendChild(document.createTextNode(' Удалить'));
+
+                        div.appendChild(previewImg);
+                        div.appendChild(label);
                         newList.appendChild(div);
                     }
                 });
@@ -142,19 +191,13 @@
             const slots = MAX_PHOTOS - (existing.length - toDel) - newItems.length;
             const files = Array.from(this.files || []).slice(0, Math.max(0, slots));
             files.forEach((file, i) => {
-                if (!file.type.match(/^image\/(jpeg|png|gif|webp)/)) return;
-                const div = document.createElement('div');
-                div.className = 'photo-preview-item';
-                div.dataset.new = '1';
-                div.dataset.index = i;
-                div._file = file;
-                div.draggable = true;
-                div.innerHTML = '<img src="" alt="" draggable="false"><button type="button" class="photo-preview-remove" title="Удалить"><i class="bi bi-x-lg"></i></button>';
-                div.querySelector('img').src = URL.createObjectURL(file);
-                div.querySelector('.photo-preview-remove').onclick = () => {
+                if (!file.type.match(/^image\/(jpeg|png)$/)) return;
+                const div = createPreviewItem(file, () => {
                     div.remove();
                     syncEditFormFiles(form);
-                };
+                });
+                div.dataset.new = '1';
+                div.dataset.index = i;
                 listEl.appendChild(div);
             });
             initSortable(form, listEl, true);
@@ -290,6 +333,29 @@
         });
     }
 
+    function initCaptchaRefresh() {
+        document.querySelectorAll('.js-captcha-refresh').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-captcha-target') || '';
+                const base = btn.getAttribute('data-captcha-base') || '';
+                const img = targetId ? document.getElementById(targetId) : null;
+                if (!img || !base) return;
+                img.src = base + Date.now();
+            });
+        });
+    }
+
+    function initConfirmSubmitButtons() {
+        document.querySelectorAll('.js-confirm-submit').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                const message = btn.getAttribute('data-confirm') || 'Подтвердите действие';
+                if (!confirm(message)) {
+                    e.preventDefault();
+                }
+            });
+        });
+    }
+
     document.addEventListener('change', function(e) {
         var input = e.target;
         if (input && input.type === 'file' && input.hasAttribute && input.hasAttribute('data-max-bytes')) {
@@ -304,5 +370,7 @@
         initEditPhotoPreview();
         initEditSelectAllPhotos();
         initCopyPhone();
+        initCaptchaRefresh();
+        initConfirmSubmitButtons();
     });
 })();

@@ -31,7 +31,7 @@
                 <tr>
                     <td data-label="Фото">
                         <?php if (!empty($firstPhotos[(int)$p['id']])): ?>
-                            <img src="<?= photo_thumb_url((int)$p['user_id'], (int)$p['id'], (string)$firstPhotos[(int)$p['id']], 200, 150) ?>" alt="" loading="lazy" decoding="async" style="width:80px;height:60px;object-fit:cover;border-radius:6px;display:block">
+                            <img src="<?= photo_thumb_url((int)$p['user_id'], (int)$p['id'], (string)$firstPhotos[(int)$p['id']], 200, 150) ?>" alt="<?= htmlspecialchars('Фото объявления: ' . $p['object_name'] . ', ' . $p['street']) ?>" loading="lazy" decoding="async" style="width:80px;height:60px;object-fit:cover;border-radius:6px;display:block">
                         <?php else: ?>
                             <svg viewBox="0 0 120 80" role="img" aria-label="Нет фото" style="width:80px;height:60px;display:block;border-radius:6px;background:#f3f4f6">
                                 <rect x="12" y="24" width="96" height="44" rx="6" fill="#e5e7eb"></rect>
@@ -50,7 +50,7 @@
                     <td data-label="М²"><?= (int)$p['m2'] ?></td>
                     <td class="cost" data-label="Цена"><?= number_format((int)$p['cost'], 0, '', ' ') ?> ₽</td>
                     <td data-label="">
-                        <button type="button" class="btn btn-outline-danger btn-sm btn-remove-favorite" data-id="<?= (int)$p['id'] ?>" title="Убрать из избранного"><i class="bi bi-heart-fill"></i></button>
+                        <button type="button" class="btn btn-outline-danger btn-sm btn-remove-favorite" data-id="<?= (int)$p['id'] ?>" title="Убрать из избранного" aria-label="Убрать объявление #<?= (int)$p['id'] ?> из избранного"><i class="bi bi-heart-fill"></i></button>
                     </td>
                 </tr>
                 <?php endforeach; ?>

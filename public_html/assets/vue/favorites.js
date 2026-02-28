@@ -4,6 +4,14 @@
 (function () {
     'use strict';
 
+    function renderDetailFavoriteButton(btn, added) {
+        btn.textContent = '';
+        const icon = document.createElement('i');
+        icon.className = added ? 'bi bi-heart-fill' : 'bi bi-heart';
+        btn.appendChild(icon);
+        btn.appendChild(document.createTextNode(added ? ' В избранном' : ' В избранное'));
+    }
+
     window.VueAppModules = window.VueAppModules || {};
     window.VueAppModules.favorites = {
         bindFavoriteButtons() {
@@ -24,10 +32,9 @@
                                 icon.classList.toggle('bi-heart', !data.added);
                             }
                             btn.title = data.added ? 'Убрать из избранного' : 'В избранное';
+                            btn.setAttribute('aria-label', data.added ? 'Убрать из избранного' : 'Добавить в избранное');
                             if (btn.classList.contains('btn-favorite-detail')) {
-                                btn.innerHTML = data.added
-                                    ? '<i class="bi bi-heart-fill"></i> В избранном'
-                                    : '<i class="bi bi-heart"></i> В избранное';
+                                renderDetailFavoriteButton(btn, !!data.added);
                             }
                             window.showToast?.(data.added ? 'Добавлено в избранное' : 'Убрано из избранного');
                         } else if (data.code === 401) {

@@ -4,7 +4,7 @@
 <div class="card border-0 shadow-sm">
     <div class="card-body">
         <h2 class="h5 mb-4">Добавить объявление</h2>
-        <div id="addError" class="alert alert-danger d-none"></div>
+        <div id="addError" class="alert alert-danger d-none" role="alert" aria-live="assertive"></div>
         <form id="addForm" enctype="multipart/form-data" data-max-price="<?= (int)($max_price ?? 999000000) ?>"><?= csrf_field() ?>
             <div class="row g-3">
                 <div class="col-md-6">
@@ -65,7 +65,7 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label">Фотографии (до 10 шт.)</label>
-                    <input type="file" name="photos[]" id="addPhotosInput" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple data-max-bytes="<?= (int)($max_photo_bytes ?? 5242880) ?>">
+                    <input type="file" name="photos[]" id="addPhotosInput" class="form-control" accept="image/jpeg,image/png" multiple data-max-bytes="<?= (int)($max_photo_bytes ?? 5242880) ?>">
                     <div class="form-text">Макс. <?= round((int)($max_photo_bytes ?? 5242880) / 1024 / 1024) ?> МБ на файл</div>
                 </div>
                 <div class="col-md-6">

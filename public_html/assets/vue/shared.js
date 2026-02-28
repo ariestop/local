@@ -60,18 +60,33 @@
                     a.className = 'list-group-item list-group-item-action';
                     a.href = item.url || '#';
                     const ts = item.viewedAt ? new Date(item.viewedAt).toLocaleString('ru-RU') : '';
-                    a.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-start gap-2">
-                            <div>
-                                <div class="fw-semibold">${item.title || 'Объявление #' + item.id}</div>
-                                <div class="small text-muted">${item.address || ''}</div>
-                            </div>
-                            <div class="text-end">
-                                <div class="fw-semibold">${Number(item.cost || 0).toLocaleString('ru-RU')} ₽</div>
-                                <div class="small text-muted">${ts}</div>
-                            </div>
-                        </div>
-                    `;
+
+                    const row = document.createElement('div');
+                    row.className = 'd-flex justify-content-between align-items-start gap-2';
+                    const left = document.createElement('div');
+                    const title = document.createElement('div');
+                    title.className = 'fw-semibold';
+                    title.textContent = item.title || ('Объявление #' + item.id);
+                    const address = document.createElement('div');
+                    address.className = 'small text-muted';
+                    address.textContent = item.address || '';
+                    left.appendChild(title);
+                    left.appendChild(address);
+
+                    const right = document.createElement('div');
+                    right.className = 'text-end';
+                    const price = document.createElement('div');
+                    price.className = 'fw-semibold';
+                    price.textContent = Number(item.cost || 0).toLocaleString('ru-RU') + ' ₽';
+                    const tsEl = document.createElement('div');
+                    tsEl.className = 'small text-muted';
+                    tsEl.textContent = ts;
+                    right.appendChild(price);
+                    right.appendChild(tsEl);
+
+                    row.appendChild(left);
+                    row.appendChild(right);
+                    a.appendChild(row);
                     list.appendChild(a);
                 });
             };
@@ -145,7 +160,7 @@
 
             citySelect.addEventListener('change', function () {
                 const sid = this.value;
-                areaSelect.innerHTML = '<option value="">Выберите...</option>';
+                areaSelect.replaceChildren(new Option('Выберите...', ''));
                 if (sid && areasByCity[sid]) {
                     areasByCity[sid].forEach((a) => {
                         const opt = document.createElement('option');

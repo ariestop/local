@@ -9,7 +9,7 @@ $photos = $photos ?? [];
 <div class="card border-0 shadow-sm">
     <div class="card-body">
         <h2 class="h5 mb-4">Редактировать объявление</h2>
-        <div id="editError" class="alert alert-danger d-none"></div>
+        <div id="editError" class="alert alert-danger d-none" role="alert" aria-live="assertive"></div>
         <form id="editForm" enctype="multipart/form-data" data-max-price="<?= (int)($max_price ?? 999000000) ?>" data-post-id="<?= $pid ?>"><?= csrf_field() ?>
             <input type="hidden" name="delete_photos" id="deletePhotos" value="">
             <div class="row g-3">
@@ -76,13 +76,13 @@ $photos = $photos ?? [];
                         <input class="form-check-input" type="checkbox" id="selectAllEditPhotos">
                         <label class="form-check-label small text-muted" for="selectAllEditPhotos">Выбрать все фото для удаления</label>
                     </div>
-                    <div id="editDeleteInfo" class="small text-muted mb-2"></div>
+                    <div id="editDeleteInfo" class="small text-muted mb-2" aria-live="polite"></div>
                     <?php endif; ?>
                     <?php if (!empty($photos)): ?>
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         <?php foreach ($photos as $ph): ?>
                         <div class="photo-item border rounded p-2" data-filename="<?= htmlspecialchars($ph['filename']) ?>">
-                            <img src="<?= photo_thumb_url($uid, $pid, $ph['filename'], 200, 150) ?>" alt="" loading="lazy" decoding="async" style="width:80px;height:60px;object-fit:cover;display:block">
+                            <img src="<?= photo_thumb_url($uid, $pid, $ph['filename'], 200, 150) ?>" alt="<?= htmlspecialchars('Фото объявления: ' . ($post['street'] ?? '')) ?>" loading="lazy" decoding="async" style="width:80px;height:60px;object-fit:cover;display:block">
                             <label class="d-block mt-1 small">
                                 <input type="checkbox" class="photo-delete" value="<?= htmlspecialchars($ph['filename']) ?>"> Удалить
                             </label>
@@ -90,7 +90,7 @@ $photos = $photos ?? [];
                         <?php endforeach; ?>
                     </div>
                     <?php endif; ?>
-                    <input type="file" name="photos[]" id="photosInput" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" multiple data-max-bytes="<?= (int)($max_photo_bytes ?? 5242880) ?>">
+                    <input type="file" name="photos[]" id="photosInput" class="form-control" accept="image/jpeg,image/png" multiple data-max-bytes="<?= (int)($max_photo_bytes ?? 5242880) ?>">
                     <div class="form-text">Макс. <?= round((int)($max_photo_bytes ?? 5242880) / 1024 / 1024) ?> МБ на файл</div>
                 </div>
                 <div class="col-md-6">

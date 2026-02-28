@@ -87,13 +87,13 @@ if ($pageTitle === '') {
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-2">
         <h1 class="detail-title"><?= htmlspecialchars($pageTitle) ?></h1>
         <div class="detail-top-actions flex-wrap justify-content-end">
-            <button type="button" class="detail-action-btn">
+            <button type="button" class="detail-action-btn" aria-label="Оставить заметку по объявлению">
                 <i class="bi bi-pencil-square me-1"></i> Оставить заметку
             </button>
             <div class="detail-toolbar-sep"></div>
             <div class="detail-views">Просмотров: <?= number_format((int) ($post['view_count'] ?? 0), 0, '', ' ') ?></div>
             <?php if ($user): ?>
-            <button type="button" class="btn btn-sm detail-fav-btn <?= !empty($isFavorite) ? 'btn-danger' : 'btn-outline-secondary' ?> btn-favorite-detail" data-id="<?= (int) $post['id'] ?>" title="<?= !empty($isFavorite) ? 'Убрать из избранного' : 'В избранное' ?>">
+            <button type="button" class="btn btn-sm detail-fav-btn <?= !empty($isFavorite) ? 'btn-danger' : 'btn-outline-secondary' ?> btn-favorite-detail" data-id="<?= (int) $post['id'] ?>" title="<?= !empty($isFavorite) ? 'Убрать из избранного' : 'В избранное' ?>" aria-label="<?= !empty($isFavorite) ? 'Убрать из избранного' : 'Добавить в избранное' ?>">
                 <i class="bi bi-heart<?= !empty($isFavorite) ? '-fill' : '' ?>"></i> <?= !empty($isFavorite) ? 'В избранном' : 'В избранное' ?>
             </button>
             <?php endif; ?>
@@ -138,12 +138,12 @@ if ($pageTitle === '') {
         <div class="col-lg-8 order-1 order-lg-2">
             <?php if (!empty($photos)): ?>
             <div class="detail-gallery-main detail-photo-wrap">
-                <img id="detailPhoto" class="gallery-img" src="<?= photo_thumb_url($uid, $pid, $photos[0]['filename'], 750, 470) ?>" alt="" loading="lazy" decoding="async" style="cursor:pointer">
+                <img id="detailPhoto" class="gallery-img" src="<?= photo_thumb_url($uid, $pid, $photos[0]['filename'], 750, 470) ?>" alt="<?= htmlspecialchars('Фото объявления: ' . $pageTitle) ?>" loading="lazy" decoding="async" style="cursor:pointer">
             </div>
             <div class="d-flex justify-content-between align-items-center mt-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="detailPrev">‹ Пред</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="detailPrev" aria-label="Предыдущее фото">‹ Пред</button>
                 <span class="text-muted small" id="detailCounter">1 / <?= count($photos) ?></span>
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="detailNext">След ›</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="detailNext" aria-label="Следующее фото">След ›</button>
             </div>
             <div class="detail-thumbs-grid" id="detailThumbs"></div>
             <?php else: ?>
@@ -199,18 +199,19 @@ window.currentDetailPost = {
 </script>
 
 <?php if (!empty($photos)): ?>
-<div class="modal fade" id="photoModal" tabindex="-1">
+<div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalTitle">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content bg-dark border-0">
             <div class="modal-header border-0">
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <h2 class="visually-hidden" id="photoModalTitle">Просмотр фотографий объявления</h2>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть просмотр фото"></button>
             </div>
             <div class="modal-body p-0 text-center">
-                <img id="lightboxImg" src="" alt="" class="img-fluid" loading="lazy" decoding="async" style="max-height:70vh;object-fit:contain">
+                <img id="lightboxImg" src="" alt="Фото объявления в увеличенном размере" class="img-fluid" loading="lazy" decoding="async" style="max-height:70vh;object-fit:contain">
                 <div class="d-flex justify-content-between align-items-center px-3 py-2">
-                    <button type="button" class="btn btn-outline-light btn-sm" id="lightboxPrev">‹ Пред</button>
+                    <button type="button" class="btn btn-outline-light btn-sm" id="lightboxPrev" aria-label="Предыдущее фото">‹ Пред</button>
                     <span class="text-white-50 small" id="lightboxCounter"></span>
-                    <button type="button" class="btn btn-outline-light btn-sm" id="lightboxNext">След ›</button>
+                    <button type="button" class="btn btn-outline-light btn-sm" id="lightboxNext" aria-label="Следующее фото">След ›</button>
                 </div>
                 <div class="d-flex gap-1 overflow-auto justify-content-center pb-2 px-2" id="lightboxThumbs"></div>
             </div>

@@ -133,7 +133,7 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
         <div class="container">
             <a class="navbar-brand" href="<?= $homeUrl ?>"><?= htmlspecialchars($config['app']['name']) ?></a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Открыть навигацию">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="nav">
@@ -149,7 +149,7 @@
                 <div class="d-flex gap-2">
                     <?php if ($user): ?>
                     <a class="navbar-text me-2 text-decoration-none text-dark" href="<?= route_url('/edit-advert') ?>"><?= htmlspecialchars($user['name']) ?></a>
-                    <a class="btn btn-outline-secondary btn-sm me-1" href="<?= route_url('/favorites') ?>" title="Избранное"><i class="bi bi-heart"></i></a>
+                    <a class="btn btn-outline-secondary btn-sm me-1" href="<?= route_url('/favorites') ?>" title="Избранное" aria-label="Открыть избранное"><i class="bi bi-heart"></i></a>
                     <a class="btn btn-outline-secondary btn-sm" href="<?= route_url('/logout') ?>">Выход</a>
                     <?php else: ?>
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">Вход</button>
@@ -178,15 +178,15 @@
     </footer>
 
     <!-- Login Modal -->
-    <div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalTitle">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Вход</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="loginModalTitle">Вход</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="loginError" class="alert alert-danger d-none"></div>
+                    <div id="loginError" class="alert alert-danger d-none" role="alert" aria-live="assertive"></div>
                     <form id="loginForm"><?= csrf_field() ?>
                         <div class="mb-3">
                             <label class="form-label">E-mail *</label>
@@ -205,20 +205,20 @@
     </div>
 
     <!-- Register Modal -->
-    <div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalTitle">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Регистрация</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="registerModalTitle">Регистрация</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="registerError" class="alert alert-danger d-none"></div>
+                    <div id="registerError" class="alert alert-danger d-none" role="alert" aria-live="assertive"></div>
                     <form id="registerForm"><?= csrf_field() ?>
                         <div class="mb-3">
                             <label class="form-label">E-mail *</label>
                             <input type="email" name="email" id="regEmail" class="form-control" required>
-                            <div id="emailStatus" class="form-text"></div>
+                            <div id="emailStatus" class="form-text" aria-live="polite"></div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Пароль *</label>
@@ -236,7 +236,7 @@
                             <label class="form-label">Капча *</label>
                             <div class="d-flex align-items-center gap-2">
                                 <img src="<?= $captchaUrl ?>" id="captchaImg" alt="Капча" class="border rounded" style="height:40px">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick='document.getElementById("captchaImg").src=<?= json_encode($captchaUrl . '?') ?>+Date.now()' title="Обновить"><i class="bi bi-arrow-clockwise"></i></button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm js-captcha-refresh" data-captcha-target="captchaImg" data-captcha-base="<?= htmlspecialchars($captchaUrl . '?') ?>" title="Обновить" aria-label="Обновить капчу"><i class="bi bi-arrow-clockwise"></i></button>
                                 <input type="text" name="captcha" class="form-control" placeholder="Введите код" style="max-width:120px" required>
                             </div>
                         </div>

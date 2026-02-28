@@ -153,7 +153,19 @@
         if (!container) return;
         const t = document.createElement('div');
         t.className = 'toast align-items-center text-bg-' + (type || 'success') + ' border-0 show';
-        t.innerHTML = '<div class="d-flex"><div class="toast-body">' + msg + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+        const wrap = document.createElement('div');
+        wrap.className = 'd-flex';
+        const body = document.createElement('div');
+        body.className = 'toast-body';
+        body.textContent = String(msg || '');
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'btn-close btn-close-white me-2 m-auto';
+        closeBtn.setAttribute('data-bs-dismiss', 'toast');
+        closeBtn.setAttribute('aria-label', 'Закрыть');
+        wrap.appendChild(body);
+        wrap.appendChild(closeBtn);
+        t.appendChild(wrap);
         container.appendChild(t);
         const bs = bootstrap.Toast.getOrCreateInstance(t, { delay: 4000 });
         t.addEventListener('hidden.bs.toast', () => t.remove());
@@ -177,11 +189,17 @@
         if (!btn) return;
         if (loading) {
             btn.classList.add('btn-loading');
-            btn.dataset.originalHtml = btn.innerHTML;
-            btn.innerHTML = '<span class="btn-spinner"></span> Отправка...';
+            if (!btn.dataset.originalText) {
+                btn.dataset.originalText = btn.textContent || '';
+            }
+            btn.textContent = ' Отправка...';
+            const spinner = document.createElement('span');
+            spinner.className = 'btn-spinner';
+            spinner.setAttribute('aria-hidden', 'true');
+            btn.prepend(spinner);
         } else {
             btn.classList.remove('btn-loading');
-            btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML;
+            btn.textContent = btn.dataset.originalText || btn.textContent || '';
         }
     }
 

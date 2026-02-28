@@ -31,12 +31,25 @@
                     a.href = '#';
                     a.className = 'detail-thumb' + (i === idx ? ' border border-2 border-primary' : ' opacity-75');
                     a.style.cssText = 'width:60px;height:45px;display:block;overflow:hidden;border-radius:4px;flex-shrink:0';
-                    a.innerHTML = '<img src="' + p.thumbSmall + '" style="width:100%;height:100%;object-fit:cover">';
-                    a.onclick = (e) => {
+                    a.setAttribute('aria-label', 'Показать фото ' + (i + 1));
+                    a.setAttribute('role', 'button');
+                    const img = document.createElement('img');
+                    img.src = p.thumbSmall;
+                    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+                    img.alt = '';
+                    a.appendChild(img);
+                    a.addEventListener('click', (e) => {
                         e.preventDefault();
                         idx = i;
                         updateDetail();
-                    };
+                    });
+                    a.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            idx = i;
+                            updateDetail();
+                        }
+                    });
                     detailThumbs.appendChild(a);
                 });
             };
@@ -57,12 +70,25 @@
                     a.href = '#';
                     a.className = 'lightbox-thumb' + (i === idx ? ' border border-2 border-white' : ' opacity-60');
                     a.style.cssText = 'width:60px;height:45px;display:block;overflow:hidden;border-radius:4px;flex-shrink:0';
-                    a.innerHTML = '<img src="' + p.thumbSmall + '" style="width:100%;height:100%;object-fit:cover">';
-                    a.onclick = (e) => {
+                    a.setAttribute('aria-label', 'Показать фото ' + (i + 1) + ' в лайтбоксе');
+                    a.setAttribute('role', 'button');
+                    const img = document.createElement('img');
+                    img.src = p.thumbSmall;
+                    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+                    img.alt = '';
+                    a.appendChild(img);
+                    a.addEventListener('click', (e) => {
                         e.preventDefault();
                         idx = i;
                         showLightbox();
-                    };
+                    });
+                    a.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            idx = i;
+                            showLightbox();
+                        }
+                    });
                     thumbs.appendChild(a);
                 });
             };
@@ -75,26 +101,36 @@
             };
 
             renderDetailThumbs();
-            if (detailImg) detailImg.onclick = () => {
-                bootstrap.Modal.getOrCreateInstance(modal).show();
-                showLightbox();
-            };
-            if (detailPrev) detailPrev.onclick = () => {
-                prevImg();
-                updateDetail();
-            };
-            if (detailNext) detailNext.onclick = () => {
-                nextImg();
-                updateDetail();
-            };
-            if (prev) prev.onclick = () => {
-                prevImg();
-                showLightbox();
-            };
-            if (next) next.onclick = () => {
-                nextImg();
-                showLightbox();
-            };
+            if (detailImg) {
+                detailImg.addEventListener('click', () => {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                    showLightbox();
+                });
+            }
+            if (detailPrev) {
+                detailPrev.addEventListener('click', () => {
+                    prevImg();
+                    updateDetail();
+                });
+            }
+            if (detailNext) {
+                detailNext.addEventListener('click', () => {
+                    nextImg();
+                    updateDetail();
+                });
+            }
+            if (prev) {
+                prev.addEventListener('click', () => {
+                    prevImg();
+                    showLightbox();
+                });
+            }
+            if (next) {
+                next.addEventListener('click', () => {
+                    nextImg();
+                    showLightbox();
+                });
+            }
 
             modal?.addEventListener('show.bs.modal', () => showLightbox());
             modal?.addEventListener('hidden.bs.modal', () => updateDetail());
