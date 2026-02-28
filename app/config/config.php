@@ -13,11 +13,11 @@ return [
         'charset' => $env('DB_CHARSET', 'utf8mb4'),
         'user' => $env('DB_USER', 'root'),
         'password' => $env('DB_PASSWORD', ''),
-        'dump_path' => $env('DB_DUMP_PATH', 'public/infosee2_m2sar.sql'),
+        'dump_path' => $env('DB_DUMP_PATH', 'public_html/infosee2_m2sar.sql'),
     ],
     'app' => [
         'name' => 'Квадратный метр',
-        'url' => $env('APP_URL', 'http://localhost/test/public'),
+        'url' => $env('APP_URL', 'http://localhost/test/public_html'),
         'env' => $env('APP_ENV', 'production'),
         'email_confirm_required' => $envBool('EMAIL_CONFIRM_REQUIRED', '0'),
         'allow_legacy_password_login' => $envBool('AUTH_ALLOW_LEGACY_PASSWORD', '1'),
@@ -45,6 +45,6 @@ return [
         'hsts_include_subdomains' => $envBool('SECURITY_HSTS_INCLUDE_SUBDOMAINS', '1'),
         'hsts_preload' => $envBool('SECURITY_HSTS_PRELOAD', '0'),
     ],
-    'images_path' => dirname(__DIR__, 2) . '/public/images',
+    'images_path' => dirname(__DIR__, 2) . '/public_html/images',
     'log_path' => dirname(__DIR__, 2) . '/storage/logs',
 ];

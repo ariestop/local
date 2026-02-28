@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Инициализация PHP Debug Bar только для dev окружения.
  * Возвращает JavascriptRenderer или null.
  *
- * @param string $basePath путь приложения (например /test/public)
+ * @param string $basePath путь приложения (например /test/public_html)
  * @param string|null $envAppEnv APP_ENV из config (если есть)
  * @return \DebugBar\JavascriptRenderer|null
  */

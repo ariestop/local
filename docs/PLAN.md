@@ -21,7 +21,7 @@
 2. Этап 0.2: Подтверждена матрица `APP_ENV` (`dev` — Debug Bar, `production` — без debug-инструментов) и синхронизирована документация.
 3. Этап 0.3: Синхронизированы `README.md`, `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/CONVENTIONS.md`.
 4. Этап 1.3: Нормализован JSON-контракт ошибок backend (`success/error/code`) для AJAX-ответов.
-5. Этап 3.1: `public/assets/vue-app.js` декомпозирован на модули `vue/shared.js`, `vue/forms.js`, `vue/favorites.js`, `vue/gallery.js`.
+5. Этап 3.1: `public_html/assets/vue-app.js` декомпозирован на модули `vue/shared.js`, `vue/forms.js`, `vue/favorites.js`, `vue/gallery.js`.
 
 ### In Progress
 1. Этап 1.2: Дальнейшая унификация server/client валидации по обязательным полям и лимитам фото.
@@ -81,7 +81,7 @@
 **Цель:** повысить поддерживаемость фронтенда без изменения бизнес-поведения.
 
 ### Backlog
-1. Разделить `public/assets/vue-app.js` на функциональные модули (forms/favorites/gallery/shared).
+1. Разделить `public_html/assets/vue-app.js` на функциональные модули (forms/favorites/gallery/shared).
 2. Убрать остаточные inline-script зависимости, оставив только передачу данных.
 3. Закрепить единый API-слой (`api.js`) и обработку ошибок.
 

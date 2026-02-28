@@ -5,7 +5,7 @@
 ```
 [Браузер]
     ↓
-[public/index.php] → [bootstrap.php] — точка входа, контейнер
+[public_html/index.php] → [bootstrap.php] — точка входа, контейнер
     ↓
 [Router] + [Container] — сопоставление маршрута, разрешение зависимостей
     ↓
@@ -27,7 +27,7 @@
 
 ### Точка входа
 
-`public/index.php`:
+`public_html/index.php`:
 - Загружает bootstrap (autoload, .env, контейнер)
 - При `APP_ENV=dev` — инициализирует Debug Bar, раздаёт ассеты GET /debugbar/*
 - Регистрирует маршруты и вызывает `Router::dispatch()`
@@ -65,7 +65,7 @@
 ### Сервисы
 
 `ImageService` — независимый класс:
-- Конструктор: `basePath` (путь к `public/images`)
+- Конструктор: `basePath` (путь к `public_html/images`)
 - `upload()` — загрузка, ресайз, создание миниатюр
 - `deletePhoto()` — удаление файлов одного фото
 - `deletePostFolder()` — удаление папки объявления

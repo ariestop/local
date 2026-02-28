@@ -16,7 +16,7 @@
 | Frontend | Bootstrap 5, Bootstrap Icons, Vue.js 3 |
 | БД | MySQL 8.0, PDO |
 | Сессии | PHP Session, имя `m2saratov_sess` |
-| Хранилище фото | `public/images/{user_id}/{post_id}/` |
+| Хранилище фото | `public_html/images/{user_id}/{post_id}/` |
 
 ## Структура каталогов (PSR-4)
 
@@ -33,7 +33,7 @@ app/
   debugbar.php    — PHP Debug Bar (при APP_ENV=dev)
   views/          — layout.php + main/*.php
   helpers.php     — photo_thumb_url(), photo_large_url()
-public/
+public_html/
   index.php              — точка входа, роутинг
   assets/api.js          — apiPost, showToast, showError, hideError, setButtonLoading, validateCostInForm
   assets/ux.js           — skeleton, lazy load, превью фото, syncAddFormFiles, syncEditFormFiles
@@ -86,7 +86,7 @@ public/
 
 ## Хранение фото
 
-Путь: `public/images/{user_id}/{post_id}/`  
+Путь: `public_html/images/{user_id}/{post_id}/`  
 Файлы: `{base}_{w}x{h}.{ext}` — например `1_xxx_200x150.jpg`, `1_xxx_1200x675.jpg`.  
 Разрешения: JPEG, PNG, GIF, WebP. До 10 фото на объявление, до 5 МБ на файл.
 
@@ -121,7 +121,7 @@ public/
 - `.env` / `.env.local`: APP_ENV (dev/production), DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, APP_URL
 - `APP_ENV=dev` — включает PHP Debug Bar (только для разработки!)
 - `php install.php` — безопасный install/update скрипт:
-  - 1-й запуск: создаёт БД, импортирует `public/infosee2_m2sar.sql`, затем применяет миграции;
+  - 1-й запуск: создаёт БД, импортирует `public_html/infosee2_m2sar.sql`, затем применяет миграции;
   - последующие запуски: baseline-импорт пропускается, применяются только pending-миграции.
 - `php cron.php expire-posts` — CLI-обработка истёкших объявлений (auto-archive + email-уведомления).
 - Если планировщик задач недоступен, используйте fallback через `/admin` (ручной запуск батчами с прогрессом).

@@ -7,7 +7,7 @@
 
 ## Pre-release checklist
 
-1. Подтвержден backup БД и `public/images`.
+1. Подтвержден backup БД и `public_html/images`.
 2. Проверен `APP_ENV=production`.
 3. На staging применены миграции и пройден smoke из `docs/TEST_PLAN.md`.
 4. Зафиксирован список миграций и версия релиза.

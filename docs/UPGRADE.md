@@ -12,8 +12,8 @@
 ## Ключевые риски (на входе)
 - Legacy-авторизация (`plaintext/md5/password_hash`) в `app/models/User.php`.
 - Неполная транзакционность CRUD-операций в `app/services/PostService.php`.
-- Разрозненная обработка API-ошибок на фронтенде (`public/assets/api.js`, `public/assets/vue/*.js`).
-- Потенциальные расхождения схемы БД и миграций (`migrations/*`, `public/infosee2_m2sar.sql`).
+- Разрозненная обработка API-ошибок на фронтенде (`public_html/assets/api.js`, `public_html/assets/vue/*.js`).
+- Потенциальные расхождения схемы БД и миграций (`migrations/*`, `public_html/infosee2_m2sar.sql`).
 - Недостаточно формализованный релизный/rollback процесс (`docs`).
 
 ## Roadmap этапов
@@ -79,18 +79,18 @@
    - отказ от «тихого» парсинга;
    - единый обработчик сетевых/серверных ошибок;
    - унифицированный контракт UI-ошибок.
-2. Убрать silent-fail в `public/assets/vue/forms.js` и `public/assets/vue/favorites.js`.
-3. Внедрить page-aware инициализацию модулей Vue (`public/assets/vue-app.js`).
+2. Убрать silent-fail в `public_html/assets/vue/forms.js` и `public_html/assets/vue/favorites.js`.
+3. Внедрить page-aware инициализацию модулей Vue (`public_html/assets/vue-app.js`).
 4. Доработать a11y: `aria-live`, клавиатурная навигация, явные состояния ошибок.
 5. Согласовать UX-паттерны (toasts/modals вместо `alert/confirm`).
 
 **Затрагиваемые модули/файлы:**
-- `public/assets/api.js`
-- `public/assets/vue-app.js`
-- `public/assets/vue/shared.js`
-- `public/assets/vue/forms.js`
-- `public/assets/vue/favorites.js`
-- `public/assets/vue/gallery.js`
+- `public_html/assets/api.js`
+- `public_html/assets/vue-app.js`
+- `public_html/assets/vue/shared.js`
+- `public_html/assets/vue/forms.js`
+- `public_html/assets/vue/favorites.js`
+- `public_html/assets/vue/gallery.js`
 - `app/views/layout.php`
 - `app/views/main/*.php`
 
@@ -123,7 +123,7 @@
 - `app/services/MailService.php`
 - `app/Repositories/*`
 - `app/models/*`
-- `public/assets/vue/*.js`
+- `public_html/assets/vue/*.js`
 - `app/views/main/*.php`
 - новые миграции в `migrations/`
 

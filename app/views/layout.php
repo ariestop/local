@@ -114,7 +114,7 @@
     ensure_session();
     $isAdmin = !empty($user) && (int) ($user['is_admin'] ?? 0) === 1;
     $assetUrl = static function (string $path): string {
-        $fullPath = dirname(__DIR__, 2) . '/public' . $path;
+        $fullPath = dirname(__DIR__, 2) . '/public_html' . $path;
         $version = file_exists($fullPath) ? (string) filemtime($fullPath) : (string) time();
         return $path . '?v=' . rawurlencode($version);
     };

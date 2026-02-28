@@ -93,7 +93,7 @@ function normalizePath(string $root, string $path): string
 {
     $path = trim($path);
     if ($path === '') {
-        throw new RuntimeException('DB_DUMP_PATH is empty. Set DB_DUMP_PATH in .env (e.g. public/infosee2_m2sar.sql).');
+        throw new RuntimeException('DB_DUMP_PATH is empty. Set DB_DUMP_PATH in .env (e.g. public_html/m2saratov_28.02.sql).');
     }
     if (str_starts_with($path, DIRECTORY_SEPARATOR)) {
         return $path;

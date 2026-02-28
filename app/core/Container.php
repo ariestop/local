@@ -64,7 +64,7 @@ class Container
             ReferenceRepository::class => new ReferenceRepository($this->get(Reference::class)),
             UserRepository::class => new UserRepository($this->get(User::class)),
             FavoriteRepository::class => new FavoriteRepository($this->get(Favorite::class)),
-            ImageService::class => new ImageService($this->config['images_path'] ?? dirname(__DIR__, 2) . '/public/images'),
+            ImageService::class => new ImageService($this->config['images_path'] ?? dirname(__DIR__, 2) . '/public_html/images'),
             MailService::class => new MailService($this->config['app']['url'] ?? '', $_ENV['MAIL_FROM'] ?? 'noreply@localhost'),
             RateLimiter::class => new RateLimiter(),
             AppErrorService::class => new AppErrorService($this->get(PDO::class), $this->get(LoggerInterface::class)),

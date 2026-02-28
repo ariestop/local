@@ -5,13 +5,13 @@
 - **PSR-4/Autoload** — `composer.json` дополнен явными маппингами для `controllers/core/models/services/Repositories/Log` (устойчиво для текущей структуры каталогов).
 - **JSON-контракты API** — унифицированы backend-ошибки в `Controller::jsonError/jsonResult`, `requireAuth()` для AJAX всегда возвращает `{success:false,error,code}`.
 - **API check-email** — endpoint возвращает расширенный контракт `{success:true, exists:boolean}` без изменения клиентского поведения.
-- **Vue decomposition** — `public/assets/vue-app.js` разбит на модули:
-  - `public/assets/vue/shared.js`
-  - `public/assets/vue/forms.js`
-  - `public/assets/vue/favorites.js`
-  - `public/assets/vue/gallery.js`
-  - `public/assets/vue-app.js` оставлен как bootstrap-компоновщик.
-- **Legacy cleanup** — удалён неиспользуемый `public/assets/app.js`.
+- **Vue decomposition** — `public_html/assets/vue-app.js` разбит на модули:
+  - `public_html/assets/vue/shared.js`
+  - `public_html/assets/vue/forms.js`
+  - `public_html/assets/vue/favorites.js`
+  - `public_html/assets/vue/gallery.js`
+  - `public_html/assets/vue-app.js` оставлен как bootstrap-компоновщик.
+- **Legacy cleanup** — удалён неиспользуемый `public_html/assets/app.js`.
 
 ## PHP Debug Bar и PSR-4 (2025)
 

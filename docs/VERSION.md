@@ -17,13 +17,13 @@
 - Приведена автозагрузка к устойчивой схеме: в `composer.json` добавлены явные PSR-4 маппинги для `app/controllers`, `app/core`, `app/models`, `app/services`, `app/Repositories`, `app/Log`.
 - Унифицирован backend JSON-контракт ошибок: `Controller::jsonError()`, `Controller::jsonResult()`, `Controller::requireAuth()` теперь возвращают `{success:false,error,code}`.
 - Обновлён `ApiController::checkEmail()` на расширенный формат `{success:true, exists:boolean}`.
-- Проведена декомпозиция `public/assets/vue-app.js`:
-  - `public/assets/vue/shared.js`
-  - `public/assets/vue/forms.js`
-  - `public/assets/vue/favorites.js`
-  - `public/assets/vue/gallery.js`
-  - `public/assets/vue-app.js` оставлен как bootstrap-компоновщик.
-- Удалён legacy-скрипт `public/assets/app.js`.
+- Проведена декомпозиция `public_html/assets/vue-app.js`:
+  - `public_html/assets/vue/shared.js`
+  - `public_html/assets/vue/forms.js`
+  - `public_html/assets/vue/favorites.js`
+  - `public_html/assets/vue/gallery.js`
+  - `public_html/assets/vue-app.js` оставлен как bootstrap-компоновщик.
+- Удалён legacy-скрипт `public_html/assets/app.js`.
 
 ### Обновление документации
 
@@ -56,24 +56,24 @@
 
 ### Этап 3 (`docs/UPGRADE.md`) — Frontend Reliability & UX
 
-- В `public/assets/api.js` переписан `apiPost()`:
+- В `public_html/assets/api.js` переписан `apiPost()`:
   - корректный разбор `application/json`,
   - нормализация ошибок в формат `{success:false,error,code,retry_after?}`,
   - отказ от «тихого» regex-парсинга ответа.
-- В `public/assets/vue/forms.js` и `public/assets/vue/favorites.js` убраны silent-fail сценарии, добавлены явные пользовательские уведомления (`toast`/ошибки формы).
-- В `public/assets/vue-app.js` реализована page-aware инициализация модулей через `body[data-page]`.
+- В `public_html/assets/vue/forms.js` и `public_html/assets/vue/favorites.js` убраны silent-fail сценарии, добавлены явные пользовательские уведомления (`toast`/ошибки формы).
+- В `public_html/assets/vue-app.js` реализована page-aware инициализация модулей через `body[data-page]`.
 - В `app/views/layout.php` добавлен `data-page` и `aria-live` для контейнера уведомлений.
 - Документация синхронизирована в `docs/ARCHITECTURE.md` и `docs/CONVENTIONS.md`.
 
 ### Этап 4 (`docs/UPGRADE.md`) — Feature Expansion
 
 - Реализованы черновики объявлений с автосохранением в `localStorage` для форм:
-  - `add` (`public/assets/vue/forms.js`),
-  - `edit` (`public/assets/vue/forms.js`, ключ по `postId`).
+  - `add` (`public_html/assets/vue/forms.js`),
+  - `edit` (`public_html/assets/vue/forms.js`, ключ по `postId`).
 - Добавлено восстановление черновика при загрузке формы и автоочистка после успешного submit.
 - Добавлен MVP **сравнения объявлений** (до 4 карточек) в `localStorage`:
   - кнопки сравнения в `app/views/main/index.php` и `app/views/main/detail.php`,
-  - панель сравнения на главной (рендер в `public/assets/vue/shared.js`).
+  - панель сравнения на главной (рендер в `public_html/assets/vue/shared.js`).
 - Добавлен MVP **истории просмотров**:
   - запись текущего объявления на detail (`window.currentDetailPost`),
   - блок «Недавно просмотренные» на главной с очисткой истории.
@@ -97,7 +97,7 @@
 - Реализован «аналог Sentry»:
   - endpoint `POST /api/client-error`,
   - сервис `AppErrorService` сохраняет ошибки в `app_error_event` и в лог,
-  - frontend (`public/assets/api.js`) отправляет `window.onerror`, `unhandledrejection` и сетевые/неожиданные API ошибки.
+  - frontend (`public_html/assets/api.js`) отправляет `window.onerror`, `unhandledrejection` и сетевые/неожиданные API ошибки.
 
 ### Админ-панель
 
