@@ -120,28 +120,45 @@ function preflightDumpPath(string $dumpPath): void
     out('INFO', 'DB dump file found.');
 }
 
+function mysqlBufferedQueryAttr(): ?int
+{
+    if (defined('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')) {
+        return (int) constant('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY');
+    }
+    if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
+        return (int) constant('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY');
+    }
+    return null;
+}
+
 function connectServer(array $db): PDO
 {
-    $dsn = sprintf('mysql:host=%s;charset=%s', $db['host'], $db['charset']);
+    $port = (int) ($db['port'] ?? 0);
+    $portPart = $port > 0 ? ';port=' . $port : '';
+    $dsn = sprintf('mysql:host=%s%s;charset=%s', $db['host'], $portPart, $db['charset']);
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ];
-    if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
-        $options[PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+    $bufferedQueryAttr = mysqlBufferedQueryAttr();
+    if ($bufferedQueryAttr !== null) {
+        $options[$bufferedQueryAttr] = true;
     }
     return new PDO($dsn, $db['user'], $db['password'] ?? '', $options);
 }
 
 function connectDatabase(array $db): PDO
 {
-    $dsn = sprintf('mysql:host=%s;dbname=%s;charset=%s', $db['host'], $db['dbname'], $db['charset']);
+    $port = (int) ($db['port'] ?? 0);
+    $portPart = $port > 0 ? ';port=' . $port : '';
+    $dsn = sprintf('mysql:host=%s%s;dbname=%s;charset=%s', $db['host'], $portPart, $db['dbname'], $db['charset']);
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ];
-    if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
-        $options[PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+    $bufferedQueryAttr = mysqlBufferedQueryAttr();
+    if ($bufferedQueryAttr !== null) {
+        $options[$bufferedQueryAttr] = true;
     }
     return new PDO($dsn, $db['user'], $db['password'] ?? '', $options);
 }
@@ -297,6 +314,19 @@ function splitSqlStatements(string $sql): array
                 continue;
             }
             if ($ch === '/' && $next === '*') {
+                if ($i + 2 < $len && $sql[$i + 2] === '!') {
+                    $end = strpos($sql, '*/', $i + 3);
+                    if ($end === false) {
+                        break;
+                    }
+                    $payload = substr($sql, $i + 3, $end - ($i + 3));
+                    $payload = preg_replace('/^\d+\s*/', '', $payload) ?? '';
+                    if ($payload !== '') {
+                        $buffer .= $payload;
+                    }
+                    $i = $end + 1;
+                    continue;
+                }
                 $inBlockComment = true;
                 $i++;
                 continue;
@@ -368,6 +398,18 @@ function executeSqlFile(PDO $pdo, string $file): void
     }
 }
 
+function shouldSkipBaselineStatement(string $stmt): bool
+{
+    $normalized = ltrim($stmt);
+    if (preg_match('/^CREATE\s+DATABASE\b/i', $normalized) === 1) {
+        return true;
+    }
+    if (preg_match('/^USE\s+[`"]?[a-zA-Z0-9_]+[`"]?$/i', $normalized) === 1) {
+        return true;
+    }
+    return false;
+}
+
 function executePhpMigration(PDO $pdo, string $file): void
 {
     $migration = require $file;
@@ -389,7 +431,26 @@ function importBaselineDump(PDO $pdo, string $dumpPath, bool $dryRun): void
         out('PLAN', "Would import baseline dump `{$dumpPath}`.");
         return;
     }
-    executeSqlFile($pdo, $dumpPath);
+    $sql = file_get_contents($dumpPath);
+    if ($sql === false) {
+        throw new RuntimeException("Failed to read SQL migration: {$dumpPath}");
+    }
+    $statements = splitSqlStatements($sql);
+    foreach ($statements as $stmt) {
+        if (shouldSkipBaselineStatement($stmt)) {
+            continue;
+        }
+        $query = $pdo->prepare($stmt);
+        $query->execute();
+        do {
+            try {
+                $query->fetchAll();
+            } catch (Throwable) {
+                // No result set for this statement/rowset.
+            }
+        } while ($query->nextRowset());
+        $query->closeCursor();
+    }
     out('INFO', 'Baseline dump imported.');
 }
 
@@ -423,8 +484,19 @@ function markBaselineAdopted(PDO $pdo, bool $dryRun): void
     $stmt->execute(['legacy-existing-db', 'install.php']);
 }
 
+function switchToConfiguredDatabase(PDO $pdo, string $dbName, bool $dryRun): void
+{
+    if ($dryRun) {
+        out('PLAN', "Would switch active database to `{$dbName}` after baseline import.");
+        return;
+    }
+    $safeDbName = str_replace('`', '``', $dbName);
+    $pdo->exec("USE `{$safeDbName}`");
+}
+
 function handleBootstrapPhase(
     PDO $pdo,
+    string $dbName,
     string $dumpPath,
     int $domainTableCount,
     bool $baselineImported,
@@ -442,6 +514,7 @@ function handleBootstrapPhase(
     if ($domainTableCount === 0) {
         out('INFO', 'Detected clean DB. Running one-time baseline bootstrap...');
         importBaselineDump($pdo, $dumpPath, $dryRun);
+        switchToConfiguredDatabase($pdo, $dbName, $dryRun);
         markBaselineImported($pdo, $dumpPath, $dryRun);
         return EXIT_OK;
     }
@@ -449,6 +522,7 @@ function handleBootstrapPhase(
     if ($forceBootstrap) {
         out('WARN', 'Force bootstrap requested on non-empty DB.');
         importBaselineDump($pdo, $dumpPath, $dryRun);
+        switchToConfiguredDatabase($pdo, $dbName, $dryRun);
         markBaselineImported($pdo, $dumpPath, $dryRun);
         return EXIT_OK;
     }
@@ -611,6 +685,7 @@ function runInstaller(array $opts, string $root): int
 
         $bootstrapStatus = handleBootstrapPhase(
             $pdo,
+            $db['dbname'],
             $dumpPath,
             $domainTableCount,
             $baselineImported,

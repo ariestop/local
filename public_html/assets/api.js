@@ -6,6 +6,37 @@
     let clientErrorLock = false;
     let lastClientErrorAt = 0;
 
+    function appBasePath() {
+        const raw = document.querySelector('meta[name="app-base"]')?.content || '';
+        return (!raw || raw === '/') ? '' : raw.replace(/\/+$/, '');
+    }
+
+    function appRequestPrefix() {
+        const entry = (document.querySelector('meta[name="app-entry"]')?.content || '').trim();
+        if (entry) {
+            return entry.replace(/\/+$/, '');
+        }
+        const pathname = String(window.location.pathname || '');
+        const fcPos = pathname.indexOf('/index.php');
+        if (fcPos !== -1) {
+            return pathname.slice(0, fcPos + '/index.php'.length).replace(/\/+$/, '');
+        }
+        return appBasePath();
+    }
+
+    function withBasePath(url) {
+        const target = String(url || '');
+        if (!target) return appBasePath() || '/';
+        if (/^(?:[a-z]+:)?\/\//i.test(target) || target.startsWith('data:') || target.startsWith('blob:')) {
+            return target;
+        }
+        const base = appRequestPrefix();
+        if (!base) return target;
+        if (target === base || target.startsWith(base + '/')) return target;
+        if (target.startsWith('/')) return base + target;
+        return target;
+    }
+
     function csrfToken() {
         return document.querySelector('meta[name="csrf-token"]')?.content || '';
     }
@@ -16,7 +47,7 @@
         lastClientErrorAt = now;
         clientErrorLock = true;
         try {
-            await fetch('/api/client-error', {
+            await fetch(withBasePath('/api/client-error'), {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
@@ -48,7 +79,7 @@
 
         let response;
         try {
-            response = await fetch(url, {
+            response = await fetch(withBasePath(url), {
                 method: 'POST',
                 body: formData || new FormData(),
                 credentials: 'same-origin',
@@ -165,6 +196,7 @@
     window.setButtonLoading = setButtonLoading;
     window.validateCostInForm = validateCostInForm;
     window.reportClientError = reportClientError;
+    window.withBasePath = withBasePath;
 
     window.addEventListener('error', function(e) {
         reportClientError({

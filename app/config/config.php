@@ -8,16 +8,17 @@ $envInt = fn(string $key, string $default = '0'): int => (int) $env($key, $defau
 
 return [
     'db' => [
-        'host' => $env('DB_HOST', 'MySQL-8.0'),
-        'dbname' => $env('DB_NAME', 'infosee2_m2sar'),
+        'host' => $env('DB_HOST', 'localhost'),
+        'port' => $envInt('DB_PORT', '3306'),
+        'dbname' => $env('DB_NAME', 'infosee2_m2'),
         'charset' => $env('DB_CHARSET', 'utf8mb4'),
         'user' => $env('DB_USER', 'root'),
-        'password' => $env('DB_PASSWORD', ''),
-        'dump_path' => $env('DB_DUMP_PATH', 'public_html/infosee2_m2sar.sql'),
+        'password' => $env('DB_PASSWORD', 'root'),
+        'dump_path' => $env('DB_DUMP_PATH', 'public/infosee2_m2sar.sql'),
     ],
     'app' => [
         'name' => 'Квадратный метр',
-        'url' => $env('APP_URL', 'http://localhost/test/public_html'),
+        'url' => $env('APP_URL', 'http://localhost:8888/local/public_html'),
         'env' => $env('APP_ENV', 'production'),
         'email_confirm_required' => $envBool('EMAIL_CONFIRM_REQUIRED', '0'),
         'allow_legacy_password_login' => $envBool('AUTH_ALLOW_LEGACY_PASSWORD', '1'),

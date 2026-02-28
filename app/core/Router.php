@@ -55,6 +55,14 @@ class Router
         if ($path === '') {
             $path = '/';
         }
+
+        // Compatibility for setups without mod_rewrite: /index.php/... should route as /...
+        if ($path === '/index.php') {
+            $path = '/';
+        } elseif (str_starts_with($path, '/index.php/')) {
+            $path = substr($path, strlen('/index.php')) ?: '/';
+        }
+
         $base = $this->basePath !== ''
             ? $this->basePath
             : rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/');

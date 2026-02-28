@@ -116,7 +116,9 @@
                 }
                 timeout = setTimeout(async () => {
                     try {
-                        const r = await fetch('/api/check-email?email=' + encodeURIComponent(email));
+                        const endpoint = (window.withBasePath ? window.withBasePath('/api/check-email') : '/api/check-email')
+                            + '?email=' + encodeURIComponent(email);
+                        const r = await fetch(endpoint);
                         const data = await r.json();
                         const exists = !!data.exists;
                         if (exists) {

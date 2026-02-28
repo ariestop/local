@@ -6,7 +6,17 @@ $root = dirname(__DIR__);
 $container = require $root . '/app/bootstrap.php';
 
 $config = $container->getConfig();
-$basePath = rtrim(parse_url($config['app']['url'] ?? '', PHP_URL_PATH) ?: '', '/');
+$configuredBasePath = rtrim(parse_url($config['app']['url'] ?? '', PHP_URL_PATH) ?: '', '/');
+$rawScriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+$scriptName = str_replace('\\', '/', $rawScriptName);
+$scriptDir = rtrim(dirname($scriptName), '/');
+if ($scriptDir === '.' || $scriptDir === '/.') {
+    $scriptDir = '';
+}
+$hasRuntimeScriptName = trim($rawScriptName) !== '';
+$basePath = $hasRuntimeScriptName
+    ? (($scriptDir !== '' && $scriptDir !== '/') ? $scriptDir : '')
+    : $configuredBasePath;
 
 $appEnv = $config['app']['env'] ?? $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: 'production';
 

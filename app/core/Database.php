@@ -11,13 +11,27 @@ final class Database
 {
     private static ?PDO $connection = null;
 
+    private static function mysqlBufferedQueryAttr(): ?int
+    {
+        if (defined('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')) {
+            return (int) constant('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY');
+        }
+        if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
+            return (int) constant('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY');
+        }
+        return null;
+    }
+
     public static function getConnection(array $config): PDO
     {
         if (self::$connection === null) {
             try {
+                $port = (int) ($config['port'] ?? 0);
+                $portPart = $port > 0 ? ';port=' . $port : '';
                 $dsn = sprintf(
-                    'mysql:host=%s;dbname=%s;charset=%s',
+                    'mysql:host=%s%s;dbname=%s;charset=%s',
                     $config['host'],
+                    $portPart,
                     $config['dbname'],
                     $config['charset']
                 );
@@ -25,8 +39,9 @@ final class Database
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 ];
-                if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
-                    $options[PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+                $bufferedQueryAttr = self::mysqlBufferedQueryAttr();
+                if ($bufferedQueryAttr !== null) {
+                    $options[$bufferedQueryAttr] = true;
                 }
                 self::$connection = new PDO($dsn, $config['user'], $config['password'], $options);
             } catch (\PDOException $e) {

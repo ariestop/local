@@ -259,6 +259,19 @@ class MigrationService
                     continue;
                 }
                 if ($ch === '/' && $next === '*') {
+                    if ($i + 2 < $len && $sql[$i + 2] === '!') {
+                        $end = strpos($sql, '*/', $i + 3);
+                        if ($end === false) {
+                            break;
+                        }
+                        $payload = substr($sql, $i + 3, $end - ($i + 3));
+                        $payload = preg_replace('/^\d+\s*/', '', $payload) ?? '';
+                        if ($payload !== '') {
+                            $buffer .= $payload;
+                        }
+                        $i = $end + 1;
+                        continue;
+                    }
                     $inBlockComment = true;
                     $i++;
                     continue;
