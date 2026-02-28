@@ -5,6 +5,10 @@
 
 ## 1) Smoke (обязательно перед релизом)
 
+Перед запуском smoke уточнить URL-режим окружения:
+- rewrite режим: `APP_USE_FRONT_CONTROLLER_URLS=0` (маршруты вида `/detail/{id}`)
+- front-controller режим: `APP_USE_FRONT_CONTROLLER_URLS=1` (маршруты вида `/index.php/detail/{id}`)
+
 1. Auth:
    - login успешный/неуспешный;
    - register с валидной/невалидной капчей;
@@ -17,7 +21,7 @@
    - toggle на списке и detail;
    - удаление из `/favorites`.
 4. Базовая навигация:
-   - главная, фильтры, пагинация, detail.
+   - главная, фильтры, пагинация, detail (в активном URL-режиме).
 
 ## 2) Contract checks (API)
 
@@ -27,13 +31,13 @@
 - при rate-limit: `code=429` и `retry_after`.
 
 Endpoint-минимум:
-- `POST /login`
-- `POST /forgot-password`
-- `GET /api/check-email`
-- `POST /add`
-- `POST /edit/{id}`
-- `POST /delete/{id}`
-- `POST /api/favorite/toggle`
+- `POST /login` (или `/index.php/login`)
+- `POST /forgot-password` (или `/index.php/forgot-password`)
+- `GET /api/check-email` (или `/index.php/api/check-email`)
+- `POST /add` (или `/index.php/add`)
+- `POST /edit/{id}` (или `/index.php/edit/{id}`)
+- `POST /delete/{id}` (или `/index.php/delete/{id}`)
+- `POST /api/favorite/toggle` (или `/index.php/api/favorite/toggle`)
 
 ## 3) Regression checks
 

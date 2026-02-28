@@ -3,6 +3,14 @@
 Документ фиксирует практичный files-first план внедрения SEO в текущем проекте.
 Принятая стратегия индексации каталога: `whitelist` (индексируем только разрешенные фильтры).
 
+## Режимы URL
+
+В проекте поддерживаются два режима маршрутизации:
+- `APP_USE_FRONT_CONTROLLER_URLS=0` — clean URL (например, `/detail/{id}`), при рабочем `mod_rewrite`.
+- `APP_USE_FRONT_CONTROLLER_URLS=1` — front-controller URL (например, `/index.php/detail/{id}`), если rewrite недоступен.
+
+Ниже в таблицах используется канонический путь `/...`; в front-controller режиме ему соответствует вариант `/index.php/...`.
+
 ## 1) Цели и KPI
 
 - Рост целевого органического трафика из Яндекса на страницы каталога и карточек.
@@ -12,7 +20,7 @@
 
 KPI для контроля:
 - Количество валидных индексируемых страниц в Яндекс.Вебмастере.
-- CTR и показы по страницам `/` и `/detail/{id}`.
+- CTR и показы по страницам каталога и карточек (включая `/index.php/...` в front-controller режиме).
 - Доля исключенных дублей и soft-404.
 - Ошибки в "Индексирование -> Страницы в поиске" и "Диагностика сайта".
 
@@ -31,11 +39,11 @@ KPI для контроля:
 
 | Тип страницы | Пример | Index | Canonical | Robots meta | JSON-LD |
 |---|---|---|---|---|---|
-| Главная без фильтров | `/` | yes | self | `index,follow` | `WebSite`, `Organization`, `BreadcrumbList` |
+| Главная без фильтров | `/` (или `/index.php`) | yes | self | `index,follow` | `WebSite`, `Organization`, `BreadcrumbList` |
 | Главная + whitelist-фильтры | `/?city_id=1&action_id=2&room=3` | yes | self (нормализованный URL) | `index,follow` | `BreadcrumbList`, опционально `ItemList` |
 | Главная + не-whitelist-фильтры | `/?price_min=...`, `sort=...`, `post_id=...` | no | на ближайший whitelist/self | `noindex,follow` | без обязательного JSON-LD |
 | Пагинация whitelist-выдачи | `/?city_id=1&page=2` | no | на страницу 1 того же набора фильтров | `noindex,follow` | без обязательного JSON-LD |
-| Карточка объявления | `/detail/123` | yes (если active) | self | `index,follow` | `BreadcrumbList`, `Product`, `Offer` |
+| Карточка объявления | `/detail/123` (или `/index.php/detail/123`) | yes (если active) | self | `index,follow` | `BreadcrumbList`, `Product`, `Offer` |
 | Архив/недоступное объявление | 404 или скрыто для не-владельца | no | без canonical | `noindex,nofollow` | нет |
 | Служебные/личные/админ | `/add`, `/edit/*`, `/favorites`, `/admin*`, `/api/*`, `/login` | no | не задавать | `noindex,nofollow` | нет |
 
@@ -154,6 +162,7 @@ KPI для контроля:
   - `/api/`
   - технические query-параметры (по необходимости шаблонами).
 - Добавить строку `Sitemap: https://<host>/sitemap.xml`.
+- Для front-controller режима допустимо добавить дополнительную строку `Sitemap: https://<host>/index.php/sitemap.xml`.
 
 Рекомендуемый шаблон:
 - `User-agent: *`
@@ -217,8 +226,8 @@ KPI для контроля:
 
 Техническая проверка:
 - `/robots.txt` = 200, корректные Disallow, есть `Sitemap`.
-- `/sitemap.xml` = 200, валидный XML, без закрытых URL.
-- У страниц `/` и `/detail/{id}` присутствуют корректные:
+- `/sitemap.xml` (или `/index.php/sitemap.xml` в front-controller режиме) = 200, валидный XML, без закрытых URL.
+- У страниц каталога и карточек (в текущем URL-режиме) присутствуют корректные:
   - `title`
   - `meta description`
   - `canonical`
@@ -232,7 +241,7 @@ KPI для контроля:
 - Для карточек присутствуют `Product` + `Offer` + `BreadcrumbList`.
 
 Проверка в Яндекс.Вебмастер:
-- Отправить `/sitemap.xml`.
+- Отправить sitemap URL, который реально используется в окружении (`/sitemap.xml` или `/index.php/sitemap.xml`).
 - Проверить "Индексирование -> Страницы в поиске":
   - рост целевых страниц;
   - снижение дублей/исключенных нецелевых URL.
