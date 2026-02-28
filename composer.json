@@ -12,6 +12,11 @@
         "php-debugbar/php-debugbar": "^3.0",
         "phpunit/phpunit": "^13.0"
     },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test:unit": "vendor/bin/phpunit --testsuite unit",
+        "test:integration": "vendor/bin/phpunit --testsuite integration"
+    },
     "autoload": {
         "psr-4": {
             "App\\Controllers\\": "app/controllers/",

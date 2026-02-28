@@ -57,3 +57,11 @@ Endpoint-минимум:
 - Нет открытых дефектов P1/P2.
 - Contract checks зелёные по всем критичным endpoint.
 - Для известных minor-багов есть workaround и зафиксирован owner.
+
+## 5) Автотесты и quality gates
+
+- Перед merge обязательно выполнить:
+  - `composer test:unit`
+  - `composer test:integration`
+- Если любой тест падает, релиз блокируется до исправления регрессии.
+- Для нового багфикса добавляется regression-тест в соответствующий suite (`unit` или `integration`).
